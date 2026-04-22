@@ -67,6 +67,15 @@ Roles are not passive reviewers. Each role owns a specific phase of the build li
 - **When uncertain, default to gitignored.** It's easier to promote content to the public tree than to retract something that shouldn't have been committed.
 - **Post-edit audit:** After any session that modifies committed files, verify that no internal content was introduced. This catches cases where the boundary check was missed during rapid iteration.
 
+**Release management (owns the full publish cycle):**
+- Version bump in `package.json` — follows semver: patch for bug fixes, minor for features, major for breaking changes.
+- Commit the version bump with a clear message listing what shipped.
+- Push to main (merge from feature branch, never direct commits).
+- `npm publish --access public` — verify the published version matches.
+- Post-publish verification: `npm view @miapre/mimic-ai version` must return the new version.
+- No release without: (1) all tests passing, (2) boundary check on committed files, (3) KNOWN_ISSUES.md updated if new limitations were introduced.
+- The release is not done until the npm registry reflects the new version. If publish fails, diagnose and retry — do not leave main ahead of npm.
+
 **Ongoing architecture checks:**
 - Is the architecture DS-agnostic? Would this work for a user with a different DS?
 - Are plugin handlers generic? No hardcoded keys in tool code
