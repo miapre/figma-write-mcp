@@ -22,6 +22,8 @@ Public-facing tool (GitHub). Must be DS-agnostic — works with ANY design syste
 
 **Rule:** If a piece of information only makes sense for one specific DS, it goes in memory, not here.
 
+**No internal names in committed files.** Never mention the creator's company, brand, or DS name (LayerLens, Stratix, or any other internal name) in any committed file — README, CHANGELOG, KNOWN_ISSUES, code comments, error messages, or any other public-facing content. Use generic examples: "team library", "your DS", "Material UI" (a public community library). This applies to every commit, every time. The Platform Architect must grep for internal names after any session that modifies committed files.
+
 **File placement rule:** Before creating ANY file OR editing ANY committed file, apply the stranger test: "Would a user cloning this repo — with a different DS, no relationship to the creator — find this content useful?" New files with internal content → gitignored path (`mimic/`, `internal/`). Additions to committed files must also pass — adding internal content to a public file is a boundary violation. The Platform Architect owns this check — it fires on every file creation AND every edit to committed files. When uncertain, default to gitignored. After any session that modifies committed files, verify nothing internal was introduced.
 
 ---
