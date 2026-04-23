@@ -455,3 +455,88 @@ If the target design system's components cannot be imported (library import fail
 - Variable not found but closest semantic match available (use closest, log)
 
 This rule takes absolute precedence over Rule 22 (efficiency). A fast all-primitive build is worse than a stopped build with an honest report. Stopping is a feature, not a failure.
+
+
+## 45. Artboard is 1440px FIXED — the only fixed-width element
+
+The artboard is always 1440px wide, FIXED width, auto-layout VERTICAL, `clipsContent: true`. This is the only element in the entire build that uses a fixed width. Every other frame uses HUG or FILL — no exceptions.
+
+**Artboard creation:**
+```
+width: 1440
+direction: VERTICAL
+primaryAxisSizingMode: AUTO  (height hugs content)
+counterAxisSizingMode: FIXED (width stays 1440)
+clipsContent: true
+```
+
+If the artboard stretches beyond 1440px, the build has a structural defect. Investigate which child is causing the overflow and constrain it.
+
+
+## 46. HTML container fidelity — extract, map, bind
+
+The HTML's container constraints (`max-width`, `padding`, `gap`, `margin: 0 auto`) define the layout structure in Figma. Mimic extracts these values and applies them using DS variables.
+
+**Phase 3 protocol — before building each section:**
+
+1. **Extract** the HTML's container model: section padding, content max-width, element gaps, centering. Read the CSS — don't guess.
+   - `padding: 80px 48px` → top: 80, right: 48, bottom: 80, left: 48
+   - `max-width: 960px; margin: 0 auto` → 960px content, centered in parent
+   - `gap: 24px` → 24px between children
+
+2. **Map to DS variables:** For each extracted value, search the DS for the closest spacing/width variable:
+   - If the DS has spacing variables (e.g., `spacing-xl = 48`), bind via `setBoundVariable`
+   - If the DS has width variables (e.g., `container-max = 960`), bind them
+   - If the DS has no spacing variables, use raw values in permissive mode — document in report as a DS gap
+
+3. **Apply as auto-layout properties — match the HTML's layout model:**
+
+   **All frames HUG height.** Height is always determined by content — never FILL or FIXED on content frames (Rule 5). The width rules below determine horizontal sizing only.
+
+   **Section frames:** FILL width. Padding from step 1, bound to DS spacing variables where available.
+
+   **Multi-column containers** (cards row, charts row, footer links) — HTML uses `display: flex`:
+   - Container: **FILL width**, gap bound to DS spacing variable
+   - Children distribute within the available width: some FILL (bar chart stretches), some use explicit widths from the HTML (cards at `flex: 1` within a `max-width` parent)
+   - If the HTML constrains the container via `max-width + margin: 0 auto`, the container uses **HUG width** and the **parent section** centers it via `counterAxisAlignItems: CENTER`
+
+   **Single-element containers** (table wrapper, hero subtitle) — HTML uses `max-width + margin: auto`:
+   - The element has its width from the HTML (e.g., 900px table, 540px subtitle text)
+   - The parent section centers it via `counterAxisAlignItems: CENTER`
+   - No wrapper frame needed — the element sits directly in the section
+
+   **Text nodes with wrapping:** explicit width (e.g., 540px for hero subtitle) is acceptable — text wrapping requires a width constraint. This is not a fixed-frame violation.
+
+   **The key distinction — read the HTML's CSS:**
+   - `display: flex` with no `max-width` → container FILL width, children distribute
+   - `display: flex` with `max-width + margin: auto` → container HUG width (capped), parent centers
+   - `max-width + margin: auto` on a single element → element width constrained, parent centers
+
+**Example — cards section:**
+```css
+.cards { display: flex; gap: 24px; max-width: 960px; margin: 0 auto; }
+.card { flex: 1; padding: 24px; }
+```
+Becomes:
+- Features section: FILL horizontal, HUG vertical, padding 96/48 (bound to DS spacing), `counterAxisAlignItems: CENTER`
+- Cards container: HORIZONTAL, **HUG horizontal** (respects 960px max-width), gap 24 (bound to DS spacing)
+- Each card: VERTICAL, width ~304px, padding 24, radius bound to DS radius variable
+
+**Example — charts section:**
+```css
+.charts { display: flex; gap: 24px; padding: 0 48px 80px; }
+.chart-card { flex: 2; }
+.chart-card.small { flex: 1; }
+```
+Becomes:
+- Charts section: HORIZONTAL, **FILL horizontal**, gap 24 (bound to DS spacing), padding 0/48/80/48
+- Bar chart card: **FILL horizontal** (flex: 2 → takes remaining space)
+- Donut chart card: **HUG horizontal** (flex: 1 → hugs its content, bar takes the rest)
+
+**What this rule prevents:**
+- Content stretching to full 1344px when the HTML constrains it to 960px or 900px
+- Artboards wider than 1440px (caused by unconstrained children)
+- Multi-column containers collapsing when they should fill available space
+- Gap values not bound to DS spacing variables
+
+This rule is owned by the **Build Engineer** (execution) and **Design QA** (verification against HTML).

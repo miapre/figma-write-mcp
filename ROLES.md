@@ -354,6 +354,8 @@ These fire whenever an artboard is produced — **mandatory, no exceptions, even
 | 42. No line breaks | | | **P** | | | |
 | 43. DS-only rule | **P** | **P** | **P** | **P** | **P** | **P** |
 | 44. Mandatory stop | **P** | **S** | | **P** | **S** | **P** |
+| 45. Artboard 1440 FIXED | **P** | **P** | | | | |
+| 46. HTML container fidelity | | **P** | **P** | **S** | | |
 
 **P** = Primary owner. **S** = Secondary (supports enforcement).
 Every rule has at least one primary owner. No gaps.
