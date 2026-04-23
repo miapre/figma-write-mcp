@@ -46,6 +46,20 @@ The first build is a discovery — Mimic scans your library and maps everything 
 
 **DS maintenance on autopilot.** Over time, Mimic's build reports become a living record of your system's gaps. Components that keep getting requested but don't exist. Tokens that would eliminate raw values. Patterns that should be standardized. You don't have to audit your DS manually — every build does it for you, while respecting your Figma token usage by caching aggressively and minimizing library reads.
 
+**Enrich your DS for the tools that read it.** Mimic observes how your components get used across builds — which variants, in which contexts, how often. From that, it can suggest component descriptions, usage guidelines, and documentation you'd normally write by hand. Those descriptions make your DS work better with Figma Make, Stitch, and any tool that uses component metadata. Generative UI depends on well-described components — Mimic helps you get there without the busywork.
+
+---
+
+## Beyond HTML — vibe design with your DS
+
+You don't always have an HTML prototype. Sometimes you just know what you need.
+
+> *"Build a system dashboard with user metrics, a recent activity table, and a status overview."*
+
+Mimic generates the layout, picks the right components from your library, applies your tokens, and delivers a DS-compliant screen. Like vibe coding, but the output is a real Figma file your team can iterate on — built entirely from your design system.
+
+Describe a screen. Get a design. Every element traceable to your DS.
+
 ---
 
 ## What other tools get wrong
