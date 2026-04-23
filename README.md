@@ -48,7 +48,13 @@ The first build is a discovery — Mimic scans your library and maps everything 
 
 **Make your DS ready for what's coming.** The tools around your design system are changing fast. Figma Make generates designs by picking components based on their descriptions — the better your descriptions, the better its output. Stitch reads your library metadata to generate full screens. Generative UI — where interfaces assemble themselves from your component library in real time — is already production-ready, but it only works when components have clear descriptions, semantic roles, and structured metadata.
 
-Most design systems aren't there yet. Mimic helps close that gap. It tracks how your components actually get used across builds — which variants, in which contexts, for what purpose — and that usage data becomes the foundation for richer component documentation. A Button used 40 times as a primary CTA across 12 builds? That's a description writing itself. Better-documented components mean better results from Figma Make, Stitch, generative UI, and every AI-powered design tool that comes next.
+Most design systems aren't there yet. Mimic helps close that gap in two ways:
+
+1. **Component descriptions from usage.** Mimic tracks how your components actually get used across builds — which variants, in which contexts, for what purpose. A Button used 40 times as a primary CTA across 12 builds? That's a description writing itself. Ask Mimic to suggest descriptions, review them, and add them to your library.
+
+2. **DESIGN.md generation.** Mimic can generate a structured DESIGN.md file from your DS — the open format that Stitch imports for brand consistency. It includes your color tokens, typography scale, spacing, radius, and component patterns. Any AI tool that reads this file produces on-brand output.
+
+Better-documented components mean better results from Figma Make, Stitch, generative UI, and every AI-powered design tool that comes next.
 
 ---
 
