@@ -2,13 +2,22 @@
 
 **Learns your design system. Builds with it. Gets better every time.**
 
-Translate any HTML prototype into Figma using only your design system — your real components, tokens, and variables. Correct it once, it remembers forever.
+Give it any HTML. It builds the equivalent in Figma using only your design system:
 
-You built a design system. Components, tokens, variables — every decision intentional. Then someone needs a screen in Figma and starts from scratch. Hardcoded colors. Raw font sizes. Frames that break when you resize them. Your system sits right there in the library panel. Unused.
+- Your real components — not blue rectangles
+- Your real tokens — not hardcoded hex values
+- Your real text styles — not raw font sizes
+- Auto-layout everywhere — not fixed frames
 
-AI tools don't help either. They generate frames that look right but fall apart on inspection — no components, no tokens, no auto-layout. You still have to rebuild everything to make it DS-compliant.
+Correct it once, it remembers. After every build, it tells you what your DS is missing.
 
-Mimic is different. Give it any HTML. It searches your design system, matches your components and tokens, and builds the equivalent in Figma. Your published Button — not a blue rectangle. Your text styles — not raw font properties. Your spacing tokens — not hardcoded pixels. Auto-layout on every frame. And after every build, it tells you what your DS is missing.
+---
+
+You built a design system. Every token, every component, every variable — intentional. Then someone needs a screen and builds it from scratch. Your system sits right there in the library panel. Unused.
+
+AI tools make it worse. They generate frames that look right but fall apart on inspection — no components, no tokens, no auto-layout. The cleanup takes as long as building it yourself.
+
+Mimic doesn't approximate your design system. It uses it.
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Node.js: v20.6+](https://img.shields.io/badge/node-%3E%3D20.6-brightgreen)
