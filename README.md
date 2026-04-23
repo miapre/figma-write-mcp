@@ -46,7 +46,9 @@ The first build is a discovery — Mimic scans your library and maps everything 
 
 **DS maintenance on autopilot.** Over time, Mimic's build reports become a living record of your system's gaps. Components that keep getting requested but don't exist. Tokens that would eliminate raw values. Patterns that should be standardized. You don't have to audit your DS manually — every build does it for you, while respecting your Figma token usage by caching aggressively and minimizing library reads.
 
-**Enrich your DS for the tools that read it.** Mimic observes how your components get used across builds — which variants, in which contexts, how often. From that, it can suggest component descriptions, usage guidelines, and documentation you'd normally write by hand. Those descriptions make your DS work better with Figma Make, Stitch, and any tool that uses component metadata. Generative UI depends on well-described components — Mimic helps you get there without the busywork.
+**Make your DS ready for what's coming.** The tools around your design system are changing fast. Figma Make generates designs by picking components based on their descriptions — the better your descriptions, the better its output. Stitch reads your library metadata to generate full screens. Generative UI — where interfaces assemble themselves from your component library in real time — is already production-ready, but it only works when components have clear descriptions, semantic roles, and structured metadata.
+
+Most design systems aren't there yet. Mimic helps close that gap. It tracks how your components actually get used across builds — which variants, in which contexts, for what purpose — and that usage data becomes the foundation for richer component documentation. A Button used 40 times as a primary CTA across 12 builds? That's a description writing itself. Better-documented components mean better results from Figma Make, Stitch, generative UI, and every AI-powered design tool that comes next.
 
 ---
 
