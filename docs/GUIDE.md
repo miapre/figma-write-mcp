@@ -226,7 +226,7 @@ Publishing makes the library available. Enabling makes it accessible in a specif
 
 You only need to do this once per file. After this, all published components appear in the Assets panel under their library name, and all published variables are accessible via `figma.teamLibrary` in the plugin.
 
-> **Community libraries require an extra step.** If your design system comes from the Figma Community (e.g., Material 3, macOS 26, iOS 18, Simple Design System), you must **duplicate it to your drafts and publish the copy as a team library** before Mimic can discover its assets. The Figma Plugin API only reliably indexes team-published libraries. See the [Troubleshooting](#troubleshooting) section for the full steps.
+> **Community libraries work out of the box.** Community libraries (Material UI, HeroUI, iOS kits, etc.) are fully supported. Enable the library in your file and Mimic handles the rest — components import normally, and variables are discovered via the Figma REST API and imported by key. No need to duplicate or re-publish.
 
 ### 0.6 Export variables for Claude
 
@@ -914,17 +914,12 @@ The component documentation has value for design decisions, code handoff, and de
 ## Troubleshooting
 
 **Community libraries return no components, variables, or styles**
-→ This is a Figma platform limitation. The Plugin API methods that discover library assets (`figma.teamLibrary.getAvailableLibraryVariableCollectionsAsync`, `getAvailableLibraryTextStylesAsync`, etc.) only reliably index **team-published libraries** — not community libraries added from the Figma Community. If you add a community UI kit (e.g., Material 3 Design Kit, macOS 26, iOS 18) directly to your file, Mimic will not be able to discover its variables, styles, or most components.
+→ This should no longer happen. As of v1.1.5, Mimic fully supports community libraries. Components and text styles import normally via `importComponentByKeyAsync`. Variables are discovered via the Figma REST API (`search_design_system`) and imported by key via `importVariableByKeyAsync`, bypassing the Plugin API's collection enumeration which doesn't cover community libraries.
 
-**The fix:** Duplicate the community file into your drafts and publish it as a team library:
-1. Open the community library file in Figma
-2. **File → Duplicate to your drafts**
-3. Open the duplicated copy
-4. Open the **Assets** panel → click **Publish library**
-5. Publish all components, variables, and styles
-6. In your target file, enable the **published copy** (not the original community version)
-
-After this, all discovery and binding tools work normally. This is the same process used for any community design system — the copy takes about two minutes and gives full API access.
+If you're still seeing this issue, make sure:
+1. The community library is **enabled** in your target file (Assets panel → Team library → toggle on)
+2. You're running Mimic v1.1.5 or later (`npm view @miapre/mimic-ai version` to check)
+3. The bridge is running and the Figma plugin is connected (`mimic_status` should show both green)
 
 **Library has components but no variables or styles**
 → Some design system libraries ship components only — no published color variables, spacing tokens, or text styles. This is common with community UI kits that were built before Figma added variable support, or kits that rely on hardcoded values inside their components. Mimic will still use every available component from the library (buttons, inputs, cards, tabs, etc.), but without tokens it cannot bind colors, spacing, or typography to the DS.
@@ -956,6 +951,30 @@ This is a one-time investment that pays off on every future build — Mimic will
 
 **Python crashes on HTTP errors**
 → Use `except urllib.error.HTTPError as e: d = json.loads(e.read())`. The bridge returns error details in the response body, but Python's `urllib` raises an exception for non-200 status codes and hides the body unless you read it explicitly.
+
+---
+
+## After your builds — reports and DS enrichment
+
+### Build reports
+After every build, ask Mimic to generate a build report. The report includes DS compliance metrics, component usage, learned patterns, and gap recommendations. Save it as markdown or HTML to share with your team.
+
+> *"Generate a build report for this screen."*
+
+### DESIGN.md generation
+Ask Mimic to generate a DESIGN.md file from your DS. This is the open format for describing design systems to AI tools — used by Stitch, Cursor, Copilot, and generative UI frameworks. It includes your color tokens, typography, spacing, radius, and component patterns.
+
+> *"Generate a DESIGN.md for my design system."*
+
+### Component descriptions
+After several builds, Mimic has data on how your components are used — which variants, in which contexts, how often. Ask it to suggest descriptions based on observed usage. These descriptions improve how Figma Make, Stitch, and generative UI tools use your components.
+
+> *"Suggest component descriptions based on what you've learned from my builds."*
+
+### Vibe design
+You don't always have an HTML prototype. Describe what you want and Mimic builds it using your DS:
+
+> *"Build a system dashboard with user metrics, a recent activity table, and a status overview. Use my design system."*
 
 ---
 
