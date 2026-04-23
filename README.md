@@ -52,7 +52,7 @@ Most design systems aren't there yet. Mimic helps close that gap in two ways:
 
 1. **Component descriptions from usage.** Mimic tracks how your components actually get used across builds — which variants, in which contexts, for what purpose. A Button used 40 times as a primary CTA across 12 builds? That's a description writing itself. Ask Mimic to suggest descriptions, review them, and add them to your library.
 
-2. **DESIGN.md generation.** Mimic can generate a structured DESIGN.md file from your DS — the open format that Stitch imports for brand consistency. It includes your color tokens, typography scale, spacing, radius, and component patterns. Any AI tool that reads this file produces on-brand output.
+2. **DESIGN.md generation.** Mimic can generate a DESIGN.md file from your DS — the open format for describing a design system to AI tools. It includes your color tokens, typography scale, spacing, radius, and component patterns. Stitch, Cursor, Copilot, generative UI frameworks, and any AI tool that reads this format produces on-brand output from your DS.
 
 Better-documented components mean better results from Figma Make, Stitch, generative UI, and every AI-powered design tool that comes next.
 
