@@ -89,6 +89,34 @@ The product philosophy is: "stopping is a feature, not a failure." A stopped bui
 ### Multi-Page HTML (Rule 26)
 When the HTML contains multiple views/pages, list them and let the user choose which to build first. Build one at a time. Learn between builds. Show the list with completion status after each build.
 
+### Component Description Suggestions
+
+When the user asks Mimic to help improve their DS documentation, or after a series of builds where patterns have accumulated:
+
+1. Read the knowledge file (`mimic_ai_knowledge_read`)
+2. For each VERIFIED pattern, generate a component description based on observed usage:
+   - What the component is (from `component_name`)
+   - How it's used (from `notes`, `use_count`, `variant`)
+   - In what contexts (from build history)
+3. Present descriptions to the user for review — Mimic suggests, the designer approves
+4. The user can apply these descriptions to their Figma library components
+
+Example output:
+```
+Based on 12 builds, here are suggested descriptions for your components:
+
+**Button** (used 47 times, verified)
+"Primary action trigger. Used for CTAs (Contained/Primary), secondary
+actions (Outlined), and navigation (Text variant). Sizes: sm for nav,
+md for forms, lg for hero sections."
+
+**Badge** (used 8 times, candidate)
+"Status indicator and announcement label. Used for hero announcements
+(Brand color) and table row status (semantic colors: Success/Warning/Error)."
+```
+
+These descriptions make the DS work better with Figma Make, Stitch, and generative UI tools — all of which read component metadata to make decisions.
+
 ### Plan Mode
 Enter plan mode for any non-trivial task (3+ steps or architectural decisions).
 If something goes sideways, STOP and re-plan immediately.
