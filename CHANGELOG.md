@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.2 (2026-04-24)
+
+### Changed
+- **README rewrite**: New structure led by elevator pitch framing. Learning loop and DS gap detection as hero sections. "What changes after 10 builds" section. Preserved all technical elements (badges, MCP configs, 45 tools, Figma setup, golden rules reference).
+
 ## 1.3.1 (2026-04-23)
 
 ### Fixed
