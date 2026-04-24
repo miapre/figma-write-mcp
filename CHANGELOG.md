@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.4.0 (2026-04-24)
+
+### Fixed
+- **Component import race condition**: Both `importComponentByKeyAsync` and `importComponentSetByKeyAsync` now reject immediately when both fail, instead of waiting 55s for a timeout. Previously, the MCP client gave up before the plugin responded, causing valid component keys to appear broken.
+- **Empty frame garbage collection**: Frames with explicit dimensions now default to FIXED on the primary axis only (not counter axis), preventing Figma from collapsing empty auto-layout frames to 0×0. Counter axis always defaults to HUG unless explicitly overridden.
+- **Variable path resolution**: `getVariableByPath` now resolves variables with or without collection name prefix (e.g., both `Colors/Background/bg-primary` and `1. Color modes/Colors/Background/bg-primary` work). Variables are cached with collection-prefixed keys on first load.
+- **set_node_fill on frames**: FRAME, SECTION, COMPONENT nodes now get fills and strokes applied directly instead of walking to vector descendants. Previously, applying a stroke to a card frame would create a stray Rectangle instead of styling the frame.
+- **Text style import font loading**: Fonts are now loaded BEFORE applying `textStyleId`, not after. Fixes silent style application failures when the style's font wasn't pre-loaded.
+
+### Added
+- **Active file info in mimic_status**: New `active_file` field returns the plugin's current file name and page, so Phase 0 can verify the build target matches the plugin context.
+- **get_file_info plugin handler**: Returns `fileName`, `currentPageId`, `currentPageName`, and `pageCount` from the active Figma file.
+
 ## 1.3.2 (2026-04-24)
 
 ### Changed

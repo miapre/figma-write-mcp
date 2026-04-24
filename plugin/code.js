@@ -31,7 +31,15 @@ var sessionDefaults = {
 async function getVariableByPath(path) {
   if (!variableCache) {
     const vars = await figma.variables.getLocalVariablesAsync();
-    variableCache = new Map(vars.map(v => [v.name, v]));
+    variableCache = new Map();
+    for (const v of vars) {
+      variableCache.set(v.name, v);
+      // Also cache with collection prefix so "1. Color modes/Colors/Background/bg-primary" resolves
+      try {
+        const col = figma.variables.getVariableCollectionById(v.variableCollectionId);
+        if (col && col.name) variableCache.set(col.name + '/' + v.name, v);
+      } catch (_) {}
+    }
   }
 
   if (variableCache.has(path)) return variableCache.get(path);
@@ -45,12 +53,16 @@ async function getVariableByPath(path) {
         for (const col of collections) {
           const libVars = await figma.teamLibrary.getVariablesInLibraryCollectionAsync(col.key);
           for (const lv of libVars) {
-            // Match exact name, or match after stripping parenthetical suffixes
-            // e.g., "Colors/Text/text-primary (900)" matches query "Colors/Text/text-primary (900)"
+            // Match exact name, stripped parenthetical suffixes, or with collection prefix stripped
+            // e.g., "Colors/Text/text-primary (900)" matches "Colors/Text/text-primary (900)"
             // AND "Colors/Text/text-primary" matches "Colors/Text/text-primary (900)"
+            // AND "1. Color modes/Colors/Background/bg-primary" matches "Colors/Background/bg-primary"
             const nameBase = lv.name.replace(/\s*\([^)]*\)\s*$/, '');
             const pathBase = path.replace(/\s*\([^)]*\)\s*$/, '');
-            if (lv.name === path || nameBase === path || lv.name === pathBase || nameBase === pathBase) {
+            const colPrefixed = col.name + '/' + lv.name;
+            const colPrefixedBase = col.name + '/' + nameBase;
+            if (lv.name === path || nameBase === path || lv.name === pathBase || nameBase === pathBase
+                || colPrefixed === path || colPrefixedBase === path || colPrefixed === pathBase || colPrefixedBase === pathBase) {
               const imported = await figma.variables.importVariableByKeyAsync(lv.key);
               variableCache.set(path, imported);
               // Also cache the base name so future lookups without parenthetical work
@@ -315,21 +327,31 @@ async function handleInsertComponent(params) {
     }, 30000);
 
     // Race both import methods in parallel — whichever resolves first wins.
-    // This keeps total import time to max(60s) instead of 60s + 60s sequential.
+    // Track failures from both attempts so we can reject immediately when both fail
+    // instead of waiting 55s for the timeout.
     try {
       var raceResult = await withTimeout(
         new Promise(function(resolve, reject) {
           var settled = false;
+          var failCount = 0;
+          var failErrors = [];
+          function checkAllFailed() {
+            failCount++;
+            if (failCount >= 2 && !settled) {
+              settled = true;
+              reject(new Error('neither import resolved — component: ' + (failErrors[0] || 'unknown') + ', set: ' + (failErrors[1] || 'unknown')));
+            }
+          }
           // Attempt 1: import as individual component
           figma.importComponentByKeyAsync(params.componentKey).then(function(comp) {
             if (!settled) { settled = true; resolve({ type: 'component', value: comp }); }
-          }).catch(function() {});
+          }).catch(function(e) { failErrors[0] = e.message || String(e); checkAllFailed(); });
           // Attempt 2: import as component set
           figma.importComponentSetByKeyAsync(params.componentKey).then(function(compSet) {
             if (!settled) { settled = true; resolve({ type: 'set', value: compSet }); }
-          }).catch(function() {});
-          // If neither resolves, the withTimeout wrapper will reject
-          setTimeout(function() { if (!settled) reject(new Error('neither import resolved')); }, 55000);
+          }).catch(function(e) { failErrors[1] = e.message || String(e); checkAllFailed(); });
+          // Safety timeout in case one attempt hangs without resolving or rejecting
+          setTimeout(function() { if (!settled) { settled = true; reject(new Error('import timed out after 55s — failCount=' + failCount + ', errors: ' + failErrors.join('; '))); } }, 55000);
         }),
         'parallel component import'
       );
@@ -487,10 +509,20 @@ async function handleCreateFrame(params) {
     if (params.paddingRight  !== undefined) await applySpacing(frame, 'paddingRight',  params.paddingRight);
     if (params.paddingBottom !== undefined) await applySpacing(frame, 'paddingBottom', params.paddingBottom);
     if (params.paddingLeft   !== undefined) await applySpacing(frame, 'paddingLeft',   params.paddingLeft);
-    // Default both axes to HUG (AUTO) — Rule 5 says fixed dimensions on content
-    // frames is a violation. Explicit params override these defaults.
-    frame.primaryAxisSizingMode  = params.primaryAxisSizingMode  || 'AUTO';
-    frame.counterAxisSizingMode  = params.counterAxisSizingMode  || 'AUTO';
+    // Sizing modes: explicit params > defaults.
+    // Primary axis: FIXED when explicit dimension given (prevents GC), AUTO otherwise.
+    // Counter axis: ALWAYS AUTO (HUG) unless explicitly overridden — content should
+    // determine the cross-axis size. The GC fix only needs the primary axis to be
+    // non-zero; the counter axis hugging to content is correct behavior.
+    const defaultPrimary = (params.primaryAxisSizingMode)
+      ? params.primaryAxisSizingMode
+      : (layoutDir === 'VERTICAL' && params.height !== undefined) || (layoutDir === 'HORIZONTAL' && params.width !== undefined)
+        ? 'FIXED' : 'AUTO';
+    const defaultCounter = params.counterAxisSizingMode || 'AUTO';
+    frame.primaryAxisSizingMode  = defaultPrimary;
+    frame.counterAxisSizingMode  = defaultCounter;
+    // Re-apply resize after layout mode is set so explicit dimensions stick
+    frame.resize(w, h);
     if (params.primaryAxisAlignItems)  frame.primaryAxisAlignItems  = params.primaryAxisAlignItems;
     if (params.counterAxisAlignItems)  frame.counterAxisAlignItems  = params.counterAxisAlignItems;
   }
@@ -656,10 +688,12 @@ async function handleCreateText(params) {
       // Check preloaded cache first
       var cachedId = styleCache.get(params.textStyleId) || styleCache.get(styleKey);
       if (cachedId) {
-        // Style is cached — apply directly, then load the font it uses
+        // Style is cached — load font first, then apply style
         try {
+          // Load a default font first so textStyleId assignment can succeed
+          await figma.loadFontAsync({ family: sessionDefaults.fontFamily || 'Inter', style: 'Regular' });
           text.textStyleId = cachedId;
-          // Load the font the style uses (read from the node after style is applied)
+          // Now load the actual font the style uses (may differ from default)
           if (text.fontName && text.fontName !== figma.mixed) {
             await figma.loadFontAsync(text.fontName);
           }
@@ -675,22 +709,41 @@ async function handleCreateText(params) {
           new Promise(function(_, reject) { setTimeout(function() { reject(new Error('style import timeout')); }, 20000); }),
         ]);
         if (importedStyle && importedStyle.id) {
-          text.textStyleId = importedStyle.id;
-          // Load the font the style specifies
-          if (text.fontName && text.fontName !== figma.mixed) {
-            await figma.loadFontAsync(text.fontName);
+          // Load the font the style requires BEFORE applying the style.
+          // Figma requires the font to be loaded before any text property changes.
+          // Read the font from the style definition, not from the text node.
+          try {
+            var styleFontName = null;
+            if (importedStyle.fontName) {
+              styleFontName = importedStyle.fontName;
+            }
+            if (styleFontName) {
+              await figma.loadFontAsync(styleFontName);
+            } else {
+              // Fallback: load Inter Regular so textStyleId assignment doesn't fail
+              await figma.loadFontAsync({ family: sessionDefaults.fontFamily || 'Inter', style: 'Regular' });
+            }
+          } catch (fontErr) {
+            // Font load failed — try loading Inter as last resort
+            try { await figma.loadFontAsync({ family: 'Inter', style: 'Regular' }); } catch (_) {}
           }
+          text.textStyleId = importedStyle.id;
           styleApplied = true;
           styleCache.set(params.textStyleId, importedStyle.id);
           styleCache.set(styleKey, importedStyle.id);
-          // Auto-detect DS font: if no fontFamily is set, learn it from the first successful style import.
-          // This makes the plugin DS-agnostic — it discovers the font from the DS instead of assuming one.
-          if (!sessionDefaults.fontFamily && text.fontName && text.fontName !== figma.mixed) {
-            sessionDefaults.fontFamily = text.fontName.family;
+          // Auto-detect DS font from the first successful import
+          if (!sessionDefaults.fontFamily) {
+            try {
+              if (text.fontName && text.fontName !== figma.mixed) {
+                sessionDefaults.fontFamily = text.fontName.family;
+              }
+            } catch (_) {}
           }
         }
       }
-    } catch (_) { /* style import failed — fall through to raw */ }
+    } catch (styleErr) {
+      dsCompliance.styleError = styleErr.message || String(styleErr);
+    }
     dsCompliance.textStyle = styleApplied ? 'ds_style' : 'style_failed';
     if (!styleApplied) dsCompliance.failedStyleId = params.textStyleId;
   }
@@ -1482,8 +1535,21 @@ async function handleSetNodeFill(params) {
   const node = figma.getNodeById(params.nodeId);
   if (!node) throw new Error(`Node ${params.nodeId} not found`);
   const useStroke = params.target === 'stroke';
-  const vectorTypes = new Set(['VECTOR','ELLIPSE','RECTANGLE','POLYGON','STAR','LINE','BOOLEAN_OPERATION']);
   let applied = false;
+
+  // For FRAME, SECTION, COMPONENT, COMPONENT_SET: apply directly to the node.
+  // These are container nodes — the fill/stroke belongs on the container itself,
+  // not on a vector descendant. The vector walk is only for INSTANCE nodes
+  // (e.g., icon instances where the color goes on the inner vector shape).
+  const directTypes = new Set(['FRAME', 'SECTION', 'COMPONENT', 'COMPONENT_SET', 'RECTANGLE', 'ELLIPSE', 'VECTOR', 'POLYGON', 'STAR', 'LINE', 'BOOLEAN_OPERATION']);
+  if (directTypes.has(node.type)) {
+    if (useStroke && 'strokes' in node) { await applyStroke(node, params.variablePath, params.hexFallback); applied = true; }
+    else if (!useStroke && 'fills' in node) { await applyFill(node, params.variablePath, params.hexFallback); applied = true; }
+    return { ok: true, applied };
+  }
+
+  // For INSTANCE nodes: walk to the first vector-type descendant (icon coloring)
+  const vectorTypes = new Set(['VECTOR','ELLIPSE','RECTANGLE','POLYGON','STAR','LINE','BOOLEAN_OPERATION']);
   async function walk(n) {
     if (applied) return;
     if (vectorTypes.has(n.type)) {
@@ -3039,6 +3105,15 @@ function handleGetPages() {
   return figma.root.children.map(p => ({ id: p.id, name: p.name }));
 }
 
+function handleGetFileInfo() {
+  return {
+    fileName: figma.root.name,
+    currentPageId: figma.currentPage.id,
+    currentPageName: figma.currentPage.name,
+    pageCount: figma.root.children.length,
+  };
+}
+
 async function handleChangePage(params) {
   // params.pageId OR params.pageName
   let page;
@@ -3757,6 +3832,7 @@ const HANDLERS = {
   set_reactions:          handleSetReactions,
   set_prototype_start:    handleSetPrototypeStart,
   get_pages:              handleGetPages,
+  get_file_info:          handleGetFileInfo,
   change_page:            handleChangePage,
   batch:                  handleBatch,
   set_session_defaults:   handleSetSessionDefaults,
@@ -3789,3 +3865,19 @@ figma.ui.onmessage = async msg => {
     figma.ui.postMessage({ id, ok: false, error: err.message });
   }
 };
+
+// Temporary: apply frame-level stroke and radius (not via vector walk)
+async function handleSetFrameStyle(params) {
+  const node = figma.getNodeById(params.nodeId);
+  if (!node) throw new Error('Node ' + params.nodeId + ' not found');
+  if (params.strokeVariable) {
+    await applyStroke(node, params.strokeVariable, null, params.strokeWidth);
+  }
+  if (params.cornerRadius !== undefined) {
+    await applySpacing(node, 'cornerRadius', params.cornerRadius);
+  }
+  if (params.fillVariable) {
+    await applyFill(node, params.fillVariable);
+  }
+  return { ok: true };
+}

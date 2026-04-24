@@ -1721,6 +1721,7 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
 
       let bridgeRunning = false;
       let pluginConnected = false;
+      let activeFile = null;
       try {
         const r = await fetch(`${BRIDGE_URL}/status`, { signal: AbortSignal.timeout(2000) });
         bridgeRunning = r.ok;
@@ -1729,6 +1730,13 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
           pluginConnected = statusData.pluginConnected === true;
         }
       } catch { /* bridge not running */ }
+      // Query plugin for active file info (non-blocking — build continues if this fails)
+      if (pluginConnected) {
+        try {
+          const fileInfo = await callBridge('get_file_info', {});
+          activeFile = fileInfo;
+        } catch { /* plugin may not support get_file_info yet */ }
+      }
 
       const activePatterns = knowledge.patterns.filter(p => !p.valid_until);
       const patternCount = activePatterns.length;
@@ -1766,6 +1774,7 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
           age_hours: catalogAge,
           stale: catalogAge !== null && catalogAge > 168, // >7 days
         },
+        active_file: activeFile,
         first_run: !hasDsKnowledge && patternCount === 0,
         message: !hasDsKnowledge
           ? 'No DS knowledge found. Run mimic_discover_ds with your DS library file key to get started.'
