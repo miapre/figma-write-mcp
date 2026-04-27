@@ -1,6 +1,6 @@
-# ds-knowledge.json — Schema Reference (V2)
+# ds-knowledge.json: Schema Reference (V2)
 
-The knowledge file (`ds-knowledge.json`) is Mimic AI's persistent learning layer. It lives in your `mimic-ai` installation root and is updated automatically after every build. Plain JSON — inspect, edit, share freely.
+The knowledge file (`ds-knowledge.json`) is Mimic AI's persistent learning layer. It lives in your `mimic-ai` installation root and is updated automatically after every build. Plain JSON. Inspect, edit, and share freely.
 
 ---
 
@@ -25,9 +25,9 @@ The knowledge file (`ds-knowledge.json`) is Mimic AI's persistent learning layer
 | Field | Type | Description |
 |---|---|---|
 | `version` | number | Schema version. Current: `2`. V1 files are auto-migrated on load. |
-| `patterns` | array | Component mappings — HTML pattern → DS component. |
-| `explicit_rules` | array | DS structural rules — gaps, substitutions, conventions. |
-| `gaps` | object | DS gap tracker — components your DS is missing, accumulated across builds. |
+| `patterns` | array | Component mappings: HTML pattern → DS component. |
+| `explicit_rules` | array | DS structural rules: gaps, substitutions, conventions. |
+| `gaps` | object | DS gap tracker. Components your DS is missing, accumulated across builds. |
 | `catalog` | object | Cached DS inventory for warm-cache builds. |
 | `meta` | object | Counts and diagnostics. |
 | `updated` | ISO 8601 | Last write timestamp. Set automatically. |
@@ -78,7 +78,7 @@ Each entry records one HTML pattern → DS component mapping with provenance, co
 | `configuration_recipe` | object or null | Full configuration replay: text overrides by node name, hidden slots, badge colors. Eliminates component re-inspection on warm builds. |
 | `variant` | string or null | Exact variant name string for the component. |
 | `props_mapping` | object or null | Properties to set via `setProperties()`. |
-| `signature` | string | HTML pattern signature — tag + classes + key attributes. |
+| `signature` | string | HTML pattern signature: tag + classes + key attributes. |
 | `scope` | enum | `project`, `user`, `global`. Scopes cascade: project → user → global. |
 | `examples` | array | HTML snippets and build references. Kept to last 10. |
 | `last_validated` | ISO 8601 or null | When the component key was last verified against the live DS. |
@@ -104,7 +104,7 @@ Each entry records one HTML pattern → DS component mapping with provenance, co
 
 **Demotion:** User correction → `correction_count` incremented, VERIFIED → CANDIDATE, confidence reduced.
 
-**Invalidation:** If `importComponentByKeyAsync(key)` fails or the target variant no longer exists, `valid_until` is set and the pattern is re-discovered from the live DS. The DS is always the source of truth — cache is acceleration, never authority.
+**Invalidation:** If `importComponentByKeyAsync(key)` fails or the target variant no longer exists, `valid_until` is set and the pattern is re-discovered from the live DS. The DS is always the source of truth. Cache is acceleration, never authority.
 
 ---
 
@@ -127,7 +127,7 @@ Recipes are invalidated when the component or variant changes in the DS.
 
 ## Gap tracker
 
-Tracks DS components that are missing — elements Mimic builds as primitives because no component exists.
+Tracks DS components that are missing: elements Mimic builds as primitives because no component exists.
 
 ```json
 {
@@ -175,7 +175,7 @@ Unchanged from V1. Records DS structural insights: gaps, substitutions, conventi
   "state": "active",
   "substitution_key": "xyz789...",
   "substitution_name": "Badge",
-  "reason": "No chip component in DS — Badge used as nearest equivalent",
+  "reason": "No chip component in DS. Badge used as nearest equivalent",
   "seen_count": 4,
   "first_seen": "2026-03-01T09:00:00.000Z",
   "last_seen": "2026-04-18T02:00:00.000Z",
@@ -200,7 +200,7 @@ Automatic on first load. V1 patterns get defaults:
 - `valid_until`: null
 - All other V2 fields: null or empty
 
-No data is lost. V1 files continue to work — they are upgraded transparently.
+No data is lost. V1 files continue to work. They are upgraded transparently.
 
 ---
 
@@ -212,4 +212,4 @@ Safe to edit. Common operations:
 - **Add a configuration recipe:** Save the exact text overrides, hidden slots, and badge colors. Eliminates component inspection.
 - **Dismiss a gap:** Set `"resolved": true` on the gap entry, or `"dismissed": true` on the explicit rule.
 - **Reset after DS update:** Set `"valid_until": now` on stale patterns. Mimic re-discovers on next build.
-- **Share across a team:** Copy `ds-knowledge.json` into your team's shared repo or Slack channel. Team members place it at the root of their Mimic installation to start with your accumulated knowledge. Note: the file is gitignored by default in the Mimic repo itself — this is about sharing it in *your project's* repo if you choose to.
+- **Share across a team:** Copy `ds-knowledge.json` into your team's shared repo or Slack channel. Team members place it at the root of their Mimic installation to start with your accumulated knowledge. Note: the file is gitignored by default in the Mimic repo itself. This is about sharing it in *your project's* repo if you choose to.

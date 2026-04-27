@@ -8,10 +8,10 @@
 By the end of this guide you will be able to do three things with Claude Code and Figma:
 
 **1. Build UI from a description**
-Describe a screen — layout, sections, data, charts — and watch it appear in Figma in real time, using your actual published components and design token variables. Not a mockup. Not a recreation. Your real library components, your real variables, wired up correctly.
+Describe a screen (layout, sections, data, charts) and watch it appear in Figma in real time, using your actual published components and design token variables. Not a mockup. Not a recreation. Your real library components, your real variables, wired up correctly.
 
 **2. Translate HTML into Figma**
-If you have an HTML prototype or coded mockup, Claude can read it and recreate it inside Figma — mapping your HTML structure to your design system components and replacing hardcoded CSS values with the correct tokens.
+If you have an HTML prototype or coded mockup, Claude can read it and recreate it inside Figma, mapping your HTML structure to your design system components and replacing hardcoded CSS values with the correct tokens.
 
 **3. Target specific library components and variables**
 You can tell Claude which components to use, which design tokens to apply, and which layout patterns to follow. Claude will look up what is available in your library and use the right pieces.
@@ -22,9 +22,9 @@ Here is an example of what you can build with this system:
 
 Claude wrote the code, executed it, and the entire page appeared in Figma in under two minutes.
 
-**Two things Mimic needs before every build:** First, it will ask where in Figma you want the output — answer with a Figma link or plain language (file name, page, artboard). Second, your component library must be enabled in that file, not just published. If Mimic can't find any components, it stops and tells you how to fix it before proceeding.
+**Two things Mimic needs before every build:** First, it will ask where in Figma you want the output. Answer with a Figma link or plain language (file name, page, artboard). Second, your component library must be enabled in that file, not just published. If Mimic can't find any components, it stops and tells you how to fix it before proceeding.
 
-**A note on Figma API limits:** Mimic is designed around how Figma's API actually works. Write operations — creating frames, inserting components, binding variables — are free and unlimited. Read operations — inspecting library components, reading design context, capturing screenshots — draw from a daily quota. Mimic minimizes reads by caching what it learns, skipping lookups for patterns it already knows, and limiting screenshots to one per build. The first run costs the most. Every subsequent run costs less.
+**A note on Figma API limits:** Mimic is designed around how Figma's API actually works. Write operations (creating frames, inserting components, binding variables) are free and unlimited. Read operations (inspecting library components, reading design context, capturing screenshots) draw from a daily quota. Mimic minimizes reads by caching what it learns, skipping lookups for patterns it already knows, and limiting screenshots to one per build. The first run costs the most. Every subsequent run costs less.
 
 ---
 
@@ -32,15 +32,15 @@ Claude wrote the code, executed it, and the entire page appeared in Figma in und
 
 | Tool | Purpose | Cost |
 |---|---|---|
-| [Claude Code](https://claude.ai/claude-code) (CLI, VS Code, or desktop) | The AI that does the work — install options in Part 1 | Anthropic account required |
+| [Claude Code](https://claude.ai/claude-code) (CLI, VS Code, or desktop) | The AI that does the work (install options in Part 1) | Anthropic account required |
 | [Node.js](https://nodejs.org/) v20.6 or later | Runs the local bridge server (v20.6+ required for `--env-file` support) | Free |
-| [Figma desktop app](https://www.figma.com/downloads/) | Required — browser Figma won't work | Free plan works |
+| [Figma desktop app](https://www.figma.com/downloads/) | Required (browser Figma won't work) | Free plan works |
 | A Figma account with a published component library | Your design system | **Figma Professional plan or above required** for component libraries and variable binding |
 | A Figma Personal Access Token | Lets the bridge look up component keys | Free to generate |
 
 ---
 
-## How it works — the big picture
+## How it works: the big picture
 
 There are two separate channels between Claude and Figma. Understanding them upfront will make every setup step make sense.
 
@@ -79,11 +79,11 @@ There are two separate channels between Claude and Figma. Understanding them upf
                                        └───────────────┘
 ```
 
-**Channel 1 — Read (Figma MCP):** Claude uses Figma's official MCP server to read your designs. It can inspect any frame, see what components exist, read property values, and understand the design context. This is read-only — it cannot create or modify anything.
+**Channel 1: Read (Figma MCP).** Claude uses Figma's official MCP server to read your designs. It can inspect any frame, see what components exist, read property values, and understand the design context. This is read-only and cannot create or modify anything.
 
-> **Read calls are limited.** Figma's MCP tools draw from a daily quota — 200 calls/day on Professional plans, 600 on Enterprise. Mimic is designed to minimize these calls: it caches component keys and variable IDs after the first use, and skips lookups entirely for patterns it has already learned. On a warm build, Mimic typically uses 0–2 read calls for the entire screen.
+> **Read calls are limited.** Figma's MCP tools draw from a daily quota: 200 calls/day on Professional plans, 600 on Enterprise. Mimic is designed to minimize these calls: it caches component keys and variable IDs after the first use, and skips lookups entirely for patterns it has already learned. On a warm build, Mimic typically uses 0–2 read calls for the entire screen.
 
-**Channel 2 — Write (Mimic AI):** To create things in Figma, this repo provides a custom local system: a small Node.js bridge server that runs on your computer, plus a Figma plugin that runs inside the Figma desktop app. Claude sends instructions to the bridge over HTTP; the bridge forwards them to the plugin over WebSocket; the plugin executes them using Figma's Plugin API.
+**Channel 2: Write (Mimic AI).** To create things in Figma, this repo provides a custom local system: a small Node.js bridge server that runs on your computer, plus a Figma plugin that runs inside the Figma desktop app. Claude sends instructions to the bridge over HTTP; the bridge forwards them to the plugin over WebSocket; the plugin executes them using Figma's Plugin API.
 
 > **Write calls are free.** There is no rate limit on write operations. Mimic can create as many frames, components, and text nodes as needed without any quota impact.
 
@@ -91,24 +91,24 @@ There are two separate channels between Claude and Figma. Understanding them upf
 
 ## What to expect on your first run
 
-**Your first run is the most expensive — and the least polished.** That's normal, and the gap closes fast.
+**Your first run is the most expensive, and the least polished.** That's normal, and the gap closes fast.
 
-**Mimic does not scan your entire design system.** On the first run, it inspects only the patterns it sees in your HTML — one targeted search, not a full library sweep. This keeps the read cost low.
+**Mimic does not scan your entire design system.** On the first run, it inspects only the patterns it sees in your HTML: one targeted search, not a full library sweep. This keeps the read cost low.
 
 **5 reads is the ceiling.** A cold first run typically uses 3 reads: one to collect variable IDs, one to search for unknown patterns, and one final screenshot. Two more are held in reserve.
 
-**The output will be functional, but some patterns may be off.** Mimic makes its best judgment for patterns it hasn't seen before. A few components may be approximate — close, but not exact. These are candidates for correction, not failures. Tell Claude what was wrong and it will remember.
+**The output will be functional, but some patterns may be off.** Mimic makes its best judgment for patterns it hasn't seen before. A few components may be approximate: close, but not exact. These are candidates for correction, not failures. Tell Claude what was wrong and it will remember.
 
 **After the first run, costs drop fast:**
-- Variable IDs are cached — no re-read on the next run
-- Every pattern used 3× with no corrections becomes permanent — zero lookups from that point on
-- Screenshots are only taken at the very end — one per build, always
+- Variable IDs are cached. No re-read on the next run.
+- Every pattern used 3x with no corrections becomes permanent. Zero lookups from that point on.
+- Screenshots are only taken at the very end. One per build, always.
 
 **At the end of every run, Mimic tells you exactly what it learned:** how many patterns are now cached, how many reads were used, and what to correct if anything was off. The learning summary is your signal for where the next run will improve.
 
 ---
 
-## Part 0 — Set up Figma correctly
+## Part 0: Set up Figma correctly
 
 This is the most skipped step and the one that causes the most problems. Before writing a single line of code, your Figma file needs to be structured in a specific way. If this is not right, the plugin will fail to find your components and variables no matter what.
 
@@ -116,7 +116,7 @@ This is the most skipped step and the one that causes the most problems. Before 
 
 Do not put your component library in the same file where you build UIs. Figma's publishing system works file-by-file: you publish one file as a library, and other files subscribe to it.
 
-Create (or designate) one Figma file as your **design system source**. This is where all components, variables, and styles live. All other files — your product UI files — will consume from it.
+Create (or designate) one Figma file as your **design system source**. This is where all components, variables, and styles live. All other files (your product UI files) will consume from it.
 
 ### 0.2 Set up Variables
 
@@ -127,22 +127,22 @@ Variables are the backbone of the token system. The plugin reads variable values
 1. Open your design system file
 2. Click the **Variables** icon in the right panel (or go to **Edit → Variables**)
 3. Click **+** to create a new collection
-4. Name it meaningfully — for example: `1. Color modes`, `3. Spacing`, `2. Radius`
+4. Name it meaningfully, for example: `1. Color modes`, `3. Spacing`, `2. Radius`
 
-The collection name becomes part of the variable path. For example, if color variables live in a collection called `1. Color modes` and are named like `Colors/Background/bg-primary`, the path Claude passes to the plugin is `Colors/Background/bg-primary` — the collection name is NOT included.
+The collection name becomes part of the variable path. For example, if color variables live in a collection called `1. Color modes` and are named like `Colors/Background/bg-primary`, the path Claude passes to the plugin is `Colors/Background/bg-primary`. The collection name is NOT included.
 
 **Creating variables in a collection:**
 
 1. Inside a collection, click **+** to add a variable
 2. Choose the type:
-   - **Color** — for fill colors, border colors, text colors
-   - **Number** — for spacing, radius, sizing
-   - **String** — for font names, rarely used directly
+   - **Color:** fill colors, border colors, text colors
+   - **Number:** spacing, radius, sizing
+   - **String:** font names, rarely used directly
 3. Name the variable using the full path format: `Colors/Background/bg-primary`
-   - The `/` creates nested groups in the panel — purely visual organisation
+   - The `/` creates nested groups in the panel, purely visual organisation
    - This full path is exactly what you pass to the bridge
 
-**Setting variable scope — this is critical:**
+**Setting variable scope (this is critical):**
 
 By default a new variable can be applied to anything. You should restrict it to make the design system intentional, but more importantly, certain scope settings are required for the plugin's `setBoundVariable` calls to work.
 
@@ -157,7 +157,7 @@ Click the variable → in the right panel, find **Scopes**:
 | Corner radius | Corner radius |
 | Width/Height | Width, Height |
 
-If a scope is not enabled, `setBoundVariable` will fail silently — the value will be set as a raw number or not at all.
+If a scope is not enabled, `setBoundVariable` will fail silently. The value will be set as a raw number or not at all.
 
 **Tip:** For spacing variables, enable all padding and gap scopes together. This allows the same token (e.g. `spacing-3xl`) to be bound to gap, paddingTop, paddingLeft, etc.
 
@@ -169,7 +169,7 @@ The plugin reads the current mode that is active in your Figma file when it bind
 
 ### 0.3 Set up Components
 
-Components in Figma are reusable design elements — buttons, headers, cards, navigation bars.
+Components in Figma are reusable design elements: buttons, headers, cards, navigation bars.
 
 **Creating a component:**
 
@@ -177,7 +177,7 @@ Components in Figma are reusable design elements — buttons, headers, cards, na
 2. Select all the layers that make up the component
 3. Press `Cmd+Alt+K` (Mac) or `Ctrl+Alt+K` (Windows), or right-click → **Create component**
 4. A purple diamond icon confirms it is now a master component
-5. Name it clearly — this is the name Claude will reference and the name that appears in the Assets panel
+5. Name it clearly. This is the name Claude will reference and the name that appears in the Assets panel
 
 **Organising components:**
 
@@ -209,10 +209,10 @@ Publishing makes your components and variables available in other Figma files. U
 - All styles (colors, text styles, effects)
 
 **What does NOT get published automatically:**
-- Components that are set to "Private to this file" — check the component's right panel
+- Components that are set to "Private to this file" (check the component's right panel)
 - Variable collections that have "Do not publish" enabled
 
-**After publishing, every component has a key.** This is the long hash string that the plugin uses to import the component from the library. It is permanent — it never changes even if you rename or move the component. You only need to find it once and save it.
+**After publishing, every component has a key.** This is the long hash string that the plugin uses to import the component from the library. It is permanent and never changes even if you rename or move the component. You only need to find it once and save it.
 
 ### 0.5 Enable the library in your product file
 
@@ -226,19 +226,19 @@ Publishing makes the library available. Enabling makes it accessible in a specif
 
 You only need to do this once per file. After this, all published components appear in the Assets panel under their library name, and all published variables are accessible via `figma.teamLibrary` in the plugin.
 
-> **Community libraries work out of the box.** Community libraries (Material UI, HeroUI, iOS kits, etc.) are fully supported. Enable the library in your file and Mimic handles the rest — components import normally, and variables are discovered via the Figma REST API and imported by key. No need to duplicate or re-publish.
+> **Community libraries work out of the box.** Community libraries (Material UI, HeroUI, iOS kits, etc.) are fully supported. Enable the library in your file and Mimic handles the rest. Components import normally, and variables are discovered via the Figma REST API and imported by key. No need to duplicate or re-publish.
 
 ### 0.6 Export variables for Claude
 
 The plugin resolves variable names at runtime, but Claude needs to know the variable names upfront to write correct build scripts. Export your variables so you can give Claude an accurate reference.
 
-**Option 1 — Figma Variables panel export (if available in your plan):**
+**Option 1: Figma Variables panel export (if available in your plan):**
 1. Open the Variables panel
 2. Click the **Export** button (downward arrow icon, top right of the panel)
 3. Choose JSON format
 4. Save the file
 
-**Option 2 — REST API export:**
+**Option 2: REST API export:**
 The Figma REST API always works regardless of plan. Claude can fetch it for you:
 
 > *"Use the Figma MCP to export all variables from file [your file key] and list the variable names and their values."*
@@ -248,18 +248,18 @@ Claude will call `get_variable_defs` on your file and return a complete list.
 **What the export gives you:**
 
 The export contains every variable with:
-- Its **name** — this is the path you pass to the bridge (e.g. `Colors/Background/bg-primary`)
-- Its **collection** — the group it belongs to
-- Its **type** — COLOR, FLOAT, STRING
-- Its **value per mode** — the actual hex or pixel value
+- Its **name**: the path you pass to the bridge (e.g. `Colors/Background/bg-primary`)
+- Its **collection**: the group it belongs to
+- Its **type**: COLOR, FLOAT, STRING
+- Its **value per mode**: the actual hex or pixel value
 
 You use this to build the `figma_variable_names.md` memory file described in Part 6.
 
-**Variable name format — important:**
+**Variable name format (important):**
 
-The name you pass to the bridge is the variable's name within its collection, not the collection name itself. For example, if your collection is called `3. Spacing` and contains a variable called `spacing-3xl`, you pass `"spacing-3xl"` — not `"3. Spacing/spacing-3xl"`.
+The name you pass to the bridge is the variable's name within its collection, not the collection name itself. For example, if your collection is called `3. Spacing` and contains a variable called `spacing-3xl`, you pass `"spacing-3xl"`, not `"3. Spacing/spacing-3xl"`.
 
-However, if your collection is `1. Color modes` and contains `Colors/Background/bg-primary`, you pass `"Colors/Background/bg-primary"` — including the internal folder path but excluding the collection name.
+However, if your collection is `1. Color modes` and contains `Colors/Background/bg-primary`, you pass `"Colors/Background/bg-primary"`, including the internal folder path but excluding the collection name.
 
 The safest way to confirm: look at what the plugin's variable search returns. Add a quick test call:
 ```python
@@ -269,13 +269,13 @@ This will show you all variables whose name contains "bg-primary" along with the
 
 ---
 
-## Part 1 — Install Claude Code
+## Part 1: Install Claude Code
 
-Claude Code is available as a CLI, a VS Code extension, a JetBrains extension, and a desktop app. Pick whichever fits your workflow — they all give Claude access to the same tools.
+Claude Code is available as a CLI, a VS Code extension, a JetBrains extension, and a desktop app. Pick whichever fits your workflow. They all give Claude access to the same tools.
 
 ### 1.1 Install options
 
-**Option A — CLI (recommended for most developers)**
+**Option A: CLI (recommended for most developers)**
 
 ```bash
 npm install -g @anthropic-ai/claude-code
@@ -283,13 +283,13 @@ npm install -g @anthropic-ai/claude-code
 
 Then run `claude` in any terminal to start a session.
 
-**Option B — VS Code extension**
+**Option B: VS Code extension**
 
 1. Open VS Code
 2. Click the Extensions icon in the left sidebar (`Cmd+Shift+X` on Mac, `Ctrl+Shift+X` on Windows)
 3. Search for **Claude Code** and click **Install**
 
-**Option C — Desktop app**
+**Option C: Desktop app**
 
 Download from [claude.ai/download](https://claude.ai/download). Includes the full Claude Code experience without needing VS Code.
 
@@ -303,11 +303,11 @@ Get a key at [console.anthropic.com](https://console.anthropic.com) under **API 
 
 ### 1.3 Open your project folder
 
-Claude Code works within a folder on your computer. Create a dedicated folder for this project and open it — either in VS Code (`File → Open Folder`) or navigate to it in the terminal before running `claude`.
+Claude Code works within a folder on your computer. Create a dedicated folder for this project and open it, either in VS Code (`File → Open Folder`) or navigate to it in the terminal before running `claude`.
 
 ---
 
-## Part 2 — Set up the Figma Read MCP (official)
+## Part 2: Set up the Figma Read MCP (official)
 
 The official Figma MCP lets Claude read your designs. This is how Claude discovers component node IDs, inspects existing frames, and understands what is already in your file.
 
@@ -315,12 +315,12 @@ The official Figma MCP lets Claude read your designs. This is how Claude discove
 
 The token lets the bridge call the Figma REST API to look up published component keys. Without it, component insertion from a different file will not work.
 
-1. Open **Figma desktop** (not the browser — only the desktop app has the settings you need)
+1. Open **Figma desktop** (not the browser; only the desktop app has the settings you need)
 2. Click your **profile picture** in the top-left corner → **Settings**
 3. Scroll down to the **Personal access tokens** section
 4. Click **Generate new token**
 5. Give it a descriptive name, e.g. `claude-bridge`
-6. Set an expiration date (or no expiration) and leave permissions at the default — read access is sufficient
+6. Set an expiration date (or no expiration) and leave permissions at the default. Read access is sufficient.
 7. Click **Generate token**
 8. **Copy the token immediately.** Figma only shows it once. If you close the dialog without copying, you will need to generate a new one.
 
@@ -343,7 +343,7 @@ open -e ~/.claude/settings.json
 # Windows (PowerShell)
 notepad $env:USERPROFILE\.claude\settings.json
 
-# Any platform — VS Code
+# Any platform, VS Code
 code ~/.claude/settings.json
 ```
 
@@ -371,15 +371,15 @@ In the Claude Code chat panel, paste a Figma design URL and ask Claude to descri
 
 ---
 
-## Part 3 — Set up the Write Bridge (Mimic AI)
+## Part 3: Set up the Write Bridge (Mimic AI)
 
 This custom system lets Claude create things in Figma. It has three components:
 
-- **mcp.js** — the tool server that Claude Code calls
-- **bridge.js** — a local HTTP and WebSocket server
-- **plugin/** — the Figma plugin that runs inside the Figma app
+- **mcp.js**: the tool server that Claude Code calls
+- **bridge.js**: a local HTTP and WebSocket server
+- **plugin/**: the Figma plugin that runs inside the Figma app
 
-> **Used the installer or cloned the repo?** All files in Parts 3.1–3.6 already exist. Skip directly to **[Part 3.7 — Register with Claude Code](#37-register-mimic-ai-with-claude-code)**.
+> **Used the installer or cloned the repo?** All files in Parts 3.1–3.6 already exist. Skip directly to **[Part 3.7: Register with Claude Code](#37-register-mimic-ai-with-claude-code)**.
 
 ### 3.1 Create the project folder
 
@@ -430,7 +430,7 @@ BRIDGE_PORT=3055
 
 This token is the same one from Part 2. The bridge uses it to call the Figma REST API to resolve published component keys.
 
-> **Important — do not change `BRIDGE_PORT`** unless you also edit `plugin/ui.html` to match. The plugin connects to the bridge via WebSocket at `ws://localhost:3055`, and this value is hardcoded in the plugin's HTML file. If the ports don't match, the plugin will show "Bridge not running" even when the bridge is up.
+> **Important: do not change `BRIDGE_PORT`** unless you also edit `plugin/ui.html` to match. The plugin connects to the bridge via WebSocket at `ws://localhost:3055`, and this value is hardcoded in the plugin's HTML file. If the ports don't match, the plugin will show "Bridge not running" even when the bridge is up.
 
 ### 3.4 Create bridge.js
 
@@ -446,7 +446,7 @@ It must handle one instruction at a time, queuing them if needed. Each instructi
 
 ### 3.5 Create mcp.js
 
-`mcp.js` is the MCP server — the piece Claude Code sees as a list of available tools. It uses the `@modelcontextprotocol/sdk` package.
+`mcp.js` is the MCP server, the piece Claude Code sees as a list of available tools. It uses the `@modelcontextprotocol/sdk` package.
 
 **It exposes these tools:**
 
@@ -490,7 +490,7 @@ This tells Figma how to load your plugin:
 }
 ```
 
-The `"teamlibrary"` permission is essential — without it, the plugin cannot access your published component library or bind design token variables.
+The `"teamlibrary"` permission is essential. Without it, the plugin cannot access your published component library or bind design token variables.
 
 ---
 
@@ -517,7 +517,7 @@ When you pass a color or spacing token name (e.g. `"Colors/Background/bg-primary
 2. Imports it with `figma.variables.importVariableByKeyAsync()`
 3. Binds it to the node using `figma.variables.setBoundVariableForPaint()` for colors, or `node.setBoundVariable('itemSpacing', variable)` for spacing
 
-This means the resulting Figma nodes have real variable bindings — not hardcoded values. If you update the token in your library, the UI updates automatically.
+This means the resulting Figma nodes have real variable bindings, not hardcoded values. If you update the token in your library, the UI updates automatically.
 
 **Component insertion from library**
 
@@ -527,7 +527,7 @@ For library components, the plugin calls `figma.importComponentByKeyAsync(key)` 
 
 The plugin sets `layoutMode`, `itemSpacing` (gap), padding, `primaryAxisSizingMode`, `counterAxisSizingMode`, `layoutAlign`, and `layoutGrow` on created frames.
 
-> **Critical:** `layoutAlign` and `layoutGrow` must be set AFTER the node is appended to its parent (`parent.appendChild(node)`). Setting them before append has no effect — Figma silently ignores them because the node is not yet inside an auto-layout parent.
+> **Critical:** `layoutAlign` and `layoutGrow` must be set AFTER the node is appended to its parent (`parent.appendChild(node)`). Setting them before append has no effect. Figma silently ignores them because the node is not yet inside an auto-layout parent.
 
 **Chart rendering**
 
@@ -557,11 +557,11 @@ Update `~/.claude/settings.json` to include both MCPs:
 }
 ```
 
-Use the full absolute path to `mcp.js` — relative paths do not work here.
+Use the full absolute path to `mcp.js`. Relative paths do not work here.
 
 ---
 
-## Part 4 — Install the plugin into Figma
+## Part 4: Install the plugin into Figma
 
 ### 4.1 Import the plugin for development
 
@@ -583,7 +583,7 @@ The plugin needs access to your published components and variables:
 
 You need both running every time you want to build with Claude.
 
-**Step 1 — Start the bridge** (in a terminal, keep this running):
+**Step 1: Start the bridge** (in a terminal, keep this running):
 
 ```bash
 cd mimic-ai
@@ -596,7 +596,7 @@ You will see:
 [bridge] Waiting for Figma plugin to connect…
 ```
 
-**Step 2 — Run the plugin in Figma:**
+**Step 2: Run the plugin in Figma:**
 
 1. In Figma desktop, go to **Plugins → Development → Mimic AI → Run**
 2. A small badge appears showing **● ...** (amber, connecting)
@@ -606,7 +606,7 @@ The terminal will print `[bridge] Figma plugin connected`. You are ready.
 
 ---
 
-## Part 5 — Export your design tokens
+## Part 5: Export your design tokens
 
 For Claude to use your design tokens instead of raw hex values and pixel numbers, it needs to know the exact variable names.
 
@@ -632,35 +632,35 @@ design_system/foundations/
 
 What matters is extracting the **variable name as it appears in Figma**. These are the exact strings you pass to the bridge. For example, a typical design system might have:
 
-- `"Colors/Background/bg-primary"` — white background
-- `"Colors/Text/text-primary"` — primary text color
-- `"Colors/Border/border-default"` — default border color
-- `"spacing-sm"` — small spacing (e.g. 8px)
-- `"spacing-lg"` — large spacing (e.g. 24px)
-- `"radius-md"` — medium corner radius
+- `"Colors/Background/bg-primary"`: white background
+- `"Colors/Text/text-primary"`: primary text color
+- `"Colors/Border/border-default"`: default border color
+- `"spacing-sm"`: small spacing (e.g. 8px)
+- `"spacing-lg"`: large spacing (e.g. 24px)
+- `"radius-md"`: medium corner radius
 
-Your variable names will be different — they depend entirely on how your design system file is structured. The safest way to confirm the exact name is to open the Variables panel and read the path directly.
+Your variable names will be different. They depend entirely on how your design system file is structured. The safest way to confirm the exact name is to open the Variables panel and read the path directly.
 
 ### 5.3 Find your component keys
 
-Every published component in your Figma library has a unique key. You need this key to insert components from a different file. You only need to find it once — then save it to Claude's memory.
+Every published component in your Figma library has a unique key. You need this key to insert components from a different file. You only need to find it once, then save it to Claude's memory.
 
 **Method 1:** Right-click the master component in your library file → **Copy link**. The URL contains the node ID (e.g. `?node-id=1234-5678`), not the key. Pass that URL to Claude and ask it to resolve the component key using the Figma MCP.
 
-**Method 2:** Ask Claude — paste the component's Figma URL and say "get me the component key for this node." Claude will use the Figma MCP to look it up.
+**Method 2:** Ask Claude. Paste the component's Figma URL and say "get me the component key for this node." Claude will use the Figma MCP to look it up.
 
 **Method 3:** The bridge resolves keys automatically if you have `FIGMA_ACCESS_TOKEN` set in `.env`. But hardcoding them in memory is faster and avoids API calls.
 
 ---
 
-## Part 6 — Build Claude's memory
+## Part 6: Build Claude's memory
 
 Claude Code has a persistent memory system at:
 ```
 ~/.claude/projects/[project-folder-name]/memory/
 ```
 
-Create a `MEMORY.md` file there — this is an index that Claude reads at the start of every conversation. It is the key to consistent, knowledgeable responses across sessions.
+Create a `MEMORY.md` file there. This is an index that Claude reads at the start of every conversation. It is the key to consistent, knowledgeable responses across sessions.
 
 **What to put in memory:**
 
@@ -683,7 +683,7 @@ CARD:     [published component key]
 ## Layout rules
 - Artboard width: [e.g. 1440px]
 - Content max-width: [e.g. 1280px, centered]
-- Spacing tokens must be used everywhere — never raw pixel numbers
+- Spacing tokens must be used everywhere, never raw pixel numbers
 - Full-width containers: layoutAlign="STRETCH" + counterAxisSizingMode="AUTO"
 - Horizontal rows with grow children: primaryAxisSizingMode="FIXED" + layoutAlign="STRETCH"
 - Page background token: [e.g. Colors/Background/bg-primary]
@@ -693,16 +693,16 @@ Create a separate `figma_variable_names.md` file with the complete list of your 
 
 ---
 
-## Part 7 — Ask Claude to build a UI
+## Part 7: Ask Claude to build a UI
 
 With the bridge running and the plugin connected, you are ready.
 
 ### 7.1 What to say
 
 Give Claude three things:
-1. **Where to build** — the file name, page name, and artboard name. Claude will use `figma_get_page_nodes` to find the right node ID itself. You never need to look up IDs manually.
-2. **What surface** — which navigation shell to use (e.g. "top navigation header with footer", "sidebar navigation")
-3. **What content** — the sections, data, charts, and tables you want on the page
+1. **Where to build:** the file name, page name, and artboard name. Claude will use `figma_get_page_nodes` to find the right node ID itself. You never need to look up IDs manually.
+2. **What surface:** which navigation shell to use (e.g. "top navigation header with footer", "sidebar navigation")
+3. **What content:** the sections, data, charts, and tables you want on the page
 
 Example:
 > *"Go to the 'Screens' page in my design file and build a new screen on the artboard called 'Analytics'. Use the standard top-navigation layout. Page title: Sales Overview · Q4 2024. Include: a metadata strip with date range / region / total accounts / last updated, a summary card with headline numbers, 4 KPI metric cards (revenue, active users, conversion rate, avg order value), a line chart of monthly revenue over 12 months, a sortable table of top 10 accounts with columns for name / revenue / growth / status, and a bar chart comparing performance by region."*
@@ -710,7 +710,7 @@ Example:
 ### 7.2 What happens
 
 1. Claude reads your DS knowledge (`mimic_ai_knowledge_read`) for cached patterns and learned rules
-2. Claude calls MCP tools directly — `figma_create_frame`, `figma_insert_component`, `figma_create_text`, etc.
+2. Claude calls MCP tools directly: `figma_create_frame`, `figma_insert_component`, `figma_create_text`, etc.
 3. Each tool call sends one instruction to the bridge, which forwards it to the Figma plugin
 4. The plugin creates the element, binds DS variables, and returns the new node ID
 5. Claude uses that ID as the parent for the next element
@@ -725,7 +725,7 @@ Example:
 
 If you have an existing HTML file, attach it or paste its contents and ask Claude to translate it:
 
-> *"Here's an HTML prototype I built for the onboarding flow. Go to the 'Onboarding' page in my design file and recreate it on the artboard called 'Onboarding v2'. Use my design system components wherever there's a match — replace any hardcoded colors and spacing with the correct design tokens."*
+> *"Here's an HTML prototype I built for the onboarding flow. Go to the 'Onboarding' page in my design file and recreate it on the artboard called 'Onboarding v2'. Use my design system components wherever there's a match, and replace any hardcoded colors and spacing with the correct design tokens."*
 
 Claude will read the HTML structure, identify elements (nav, cards, buttons, forms, tables), map them to the closest component in your library, and build the Figma version using the bridge tools. The result will use your real variables rather than the CSS values in the HTML.
 
@@ -806,10 +806,10 @@ These patterns apply whether you're using MCP tools or the HTTP API. Skipping th
 ### Always use spacing tokens, never numbers
 
 ```python
-# Wrong — creates a raw unbound value
+# Wrong: creates a raw unbound value
 F("Content", page, gap=24, paddingLeft=32)
 
-# Correct — binds to the design system variable
+# Correct: binds to the design system variable
 F("Content", page, gap="spacing-3xl", paddingLeft="spacing-4xl")
 ```
 
@@ -869,10 +869,10 @@ T("Body text", card, layoutAlign="STRETCH")
 ### Component insertion: always pass the key
 
 ```python
-# Without key — the bridge makes an extra REST API call (slower)
+# Without key: the bridge makes an extra REST API call (slower)
 INS("1234:56789", page, width=1440)
 
-# With key — direct import, no extra API call
+# With key: direct import, no extra API call
 INS("1234:56789", page, key="your_component_published_key_here", width=1440)
 ```
 
@@ -883,10 +883,10 @@ Hardcode your frequently used component keys in Claude's memory to avoid looking
 ### Colors: always use variable paths
 
 ```python
-# Wrong — raw hex bypasses the design system
+# Wrong: raw hex bypasses the design system
 F("Card", content, fillHex="#FFFFFF")
 
-# Correct — bound to library variable
+# Correct: bound to library variable
 F("Card", content, fillVariable="Colors/Background/bg-primary")
 ```
 
@@ -894,7 +894,7 @@ F("Card", content, fillVariable="Colors/Background/bg-primary")
 
 ## What you do NOT need
 
-It is tempting to document every component into detailed JSON and Markdown specification files — buttons, cards, inputs, describing token mappings for every state and variant.
+It is tempting to document every component into detailed JSON and Markdown specification files (buttons, cards, inputs), describing token mappings for every state and variant.
 
 **None of this is needed for AI-generated UI.**
 
@@ -907,7 +907,7 @@ Claude does not need component spec files to build screens. What is actually use
 | Figma MCP to discover IDs and inspect frames | Component Markdown documentation |
 | Claude memory files with variable name formats | Design token changelog entries |
 
-The component documentation has value for design decisions, code handoff, and design review — but the AI build pipeline only needs the foundations (variable paths) and the component keys. You can skip building a full spec library if your goal is AI-generated UI.
+The component documentation has value for design decisions, code handoff, and design review, but the AI build pipeline only needs the foundations (variable paths) and the component keys. You can skip building a full spec library if your goal is AI-generated UI.
 
 ---
 
@@ -922,9 +922,9 @@ If you're still seeing this issue, make sure:
 3. The bridge is running and the Figma plugin is connected (`mimic_status` should show both green)
 
 **Library has components but no variables or styles**
-→ Some design system libraries ship components only — no published color variables, spacing tokens, or text styles. This is common with community UI kits that were built before Figma added variable support, or kits that rely on hardcoded values inside their components. Mimic will still use every available component from the library (buttons, inputs, cards, tabs, etc.), but without tokens it cannot bind colors, spacing, or typography to the DS.
+→ Some design system libraries ship components only, with no published color variables, spacing tokens, or text styles. This is common with community UI kits that were built before Figma added variable support, or kits that rely on hardcoded values inside their components. Mimic will still use every available component from the library (buttons, inputs, cards, tabs, etc.), but without tokens it cannot bind colors, spacing, or typography to the DS.
 
-**What this means for your output:** Components will look correct (they carry their own internal styles), but any element Mimic builds from scratch — text nodes, layout frames, dividers — will use raw values instead of DS variables. The build report will flag these as unbound values.
+**What this means for your output:** Components will look correct (they carry their own internal styles), but any element Mimic builds from scratch (text nodes, layout frames, dividers) will use raw values instead of DS variables. The build report will flag these as unbound values.
 
 **What to do about it:** If this is your primary DS and you plan to use it long-term, consider adding variables to the library:
 1. Open the library file
@@ -932,7 +932,7 @@ If you're still seeing this issue, make sure:
 3. Replace hardcoded values inside your components with variable references
 4. Republish the library
 
-This is a one-time investment that pays off on every future build — Mimic will automatically bind to the tokens, and your components will respond to mode changes (light/dark) and token updates across your entire file.
+This is a one-time investment that pays off on every future build. Mimic will automatically bind to the tokens, and your components will respond to mode changes (light/dark) and token updates across your entire file.
 
 **"Figma plugin is not connected"**
 → The bridge is running but the Figma plugin is not. Go to Figma desktop → Plugins → Development → Mimic AI → Run. The bridge terminal should print "plugin connected".
@@ -943,8 +943,8 @@ This is a one-time investment that pays off on every future build — Mimic will
 **"object is not extensible"**
 → A frame property (like `counterAxisSizingMode`) is being passed to a text node. Text nodes only accept `layoutAlign`, `layoutGrow`, `width`, `fontSize`, `fillVariable`, etc. Remove the invalid property.
 
-**layoutGrow has no effect — children stay small**
-→ The parent's `primaryAxisSizingMode` is set to `"AUTO"` (hug). Change it to `"FIXED"`. Children can only grow into available space — if the parent hugs its content, there is no space to grow into.
+**layoutGrow has no effect, children stay small**
+→ The parent's `primaryAxisSizingMode` is set to `"AUTO"` (hug). Change it to `"FIXED"`. Children can only grow into available space. If the parent hugs its content, there is no space to grow into.
 
 **Spacing shows as a raw number instead of a variable**
 → You passed a number instead of a string. Pass `"spacing-3xl"` (string) rather than `24` (number).
@@ -954,7 +954,7 @@ This is a one-time investment that pays off on every future build — Mimic will
 
 ---
 
-## After your builds — reports and DS enrichment
+## After your builds: reports and DS enrichment
 
 ### Build reports
 After every build, ask Mimic to generate a build report. The report includes DS compliance metrics, component usage, learned patterns, and gap recommendations. Save it as markdown or HTML to share with your team.
@@ -962,12 +962,12 @@ After every build, ask Mimic to generate a build report. The report includes DS 
 > *"Generate a build report for this screen."*
 
 ### DESIGN.md generation
-Ask Mimic to generate a DESIGN.md file from your DS. This is the open format for describing design systems to AI tools — used by Stitch, Cursor, Copilot, and generative UI frameworks. It includes your color tokens, typography, spacing, radius, and component patterns.
+Ask Mimic to generate a DESIGN.md file from your DS. This is the open format for describing design systems to AI tools, used by Stitch, Cursor, Copilot, and generative UI frameworks. It includes your color tokens, typography, spacing, radius, and component patterns.
 
 > *"Generate a DESIGN.md for my design system."*
 
 ### Component descriptions
-After several builds, Mimic has data on how your components are used — which variants, in which contexts, how often. Ask it to suggest descriptions based on observed usage. These descriptions improve how Figma Make, Stitch, and generative UI tools use your components.
+After several builds, Mimic has data on how your components are used: which variants, in which contexts, how often. Ask it to suggest descriptions based on observed usage. These descriptions improve how Figma Make, Stitch, and generative UI tools use your components.
 
 > *"Suggest component descriptions based on what you've learned from my builds."*
 

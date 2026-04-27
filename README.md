@@ -4,17 +4,17 @@
 
 # Mimic AI
 
-**The design system copilot that builds Figma screens from HTML — and gets better every time you use it.**
+**The design system copilot that builds Figma screens from HTML, and gets better every time you use it.**
 
 Give Mimic any HTML. It builds the equivalent in Figma using your actual design system:
 
-- Real components — not approximations
-- Real tokens — not hardcoded values
-- Real text styles — not manual overrides
-- Auto-layout everywhere — not fixed frames
+- Real components, not approximations
+- Real tokens, not hardcoded values
+- Real text styles, not manual overrides
+- Auto-layout everywhere, not fixed frames
 
 It doesn't just build once.
-Every output improves the next — learning your system, your conventions, and your decisions over time.
+Every output improves the next, learning your system, your conventions, and your decisions over time.
 
 After every build, it tells you what your design system is missing.
 
@@ -27,7 +27,7 @@ After every build, it tells you what your design system is missing.
 [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_MCP-0078d4?logo=visualstudiocode&logoColor=white)](vscode:mcp/install?%7B%22name%22%3A%22mimic-ai%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40miapre%2Fmimic-ai%22%5D%7D)
 [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_MCP-24bfa5?logo=visualstudiocode&logoColor=white)](vscode-insiders:mcp/install?%7B%22name%22%3A%22mimic-ai%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40miapre%2Fmimic-ai%22%5D%7D)
 
-> Open-source MCP server. Runs locally — your design data never leaves your machine.
+> Open-source MCP server. Runs locally. Your design data never leaves your machine.
 
 ---
 
@@ -37,13 +37,13 @@ After every build, it tells you what your design system is missing.
 
 ## The problem
 
-You built a design system. Every token, every component, every variable — intentional.
+You built a design system. Every token, every component, every variable. Intentional.
 
 Then someone needs a screen and builds it from scratch.
 
 Your system sits in the library panel. Unused.
 
-AI tools make it worse. They generate screens that look right but break on inspection — no components, no tokens, no structure.
+AI tools make it worse. They generate screens that look right but break on inspection: no components, no tokens, no structure.
 
 The cleanup takes as long as building it yourself.
 
@@ -51,7 +51,7 @@ Mimic fixes that.
 
 ---
 
-## It learns — and compounds
+## It learns and compounds
 
 The first build scans your design system.
 
@@ -62,12 +62,12 @@ Mimic doesn't just execute builds. It builds knowledge.
 
 **Correct it once**
 Tell Mimic:
-"That's not the right Badge — use Tag/Neutral"
+"That's not the right Badge. Use Tag/Neutral."
 
 That decision becomes permanent. Every future build uses it.
 
 **Your design system evolves. Mimic keeps up.**
-New components, renamed tokens, updated variants — Mimic detects changes at the start of every build and adapts automatically.
+New components, renamed tokens, updated variants. Mimic detects changes at the start of every build and adapts automatically.
 
 **Every build is a review**
 After each build, Mimic tells you:
@@ -85,7 +85,7 @@ Recommendations come as questions, backed by evidence:
 
 - You stop rebuilding screens by hand
 - Your team uses the same component patterns automatically
-- Design system gaps become visible — with evidence
+- Design system gaps become visible, with evidence
 - New team members produce consistent output from day one
 
 Mimic becomes the system that remembers how your team builds.
@@ -98,7 +98,7 @@ Describe a screen:
 
 > "Dashboard with metrics, activity table, and status overview"
 
-Mimic builds it using your design system — components, tokens, and layout included.
+Mimic builds it using your design system: components, tokens, and layout included.
 
 Same system. Same rules. Same output quality.
 
@@ -114,13 +114,13 @@ Clear component roles. Consistent tokens. Meaningful descriptions.
 
 Most design systems aren't there yet.
 
-Mimic helps you get there — as a side effect of using it.
+Mimic helps you get there as a side effect of using it.
 
 **Component descriptions from usage**
 Mimic observes how components are used across builds and suggests real descriptions based on actual patterns.
 
 **DESIGN.md generation**
-Generate a structured file describing your design system — readable by AI tools and frameworks.
+Generate a structured file describing your design system, readable by AI tools and frameworks.
 
 Better structure → better output across every AI tool you use.
 
@@ -146,7 +146,7 @@ Mimic captures structure.
 
 | Design system type | What Mimic does |
 |---|---|
-| **Team library** (components + tokens) | Full usage — components, variables, text styles |
+| **Team library** (components + tokens) | Full usage: components, variables, text styles |
 | **Team library** (components only) | Uses components, flags missing tokens |
 | **Community libraries** | Full support out of the box |
 
@@ -189,16 +189,16 @@ Assets panel → Team library icon → toggle on. Once per file. Community libra
 
 Every build enforces 46 quality rules. You don't configure them. They just run.
 
-- Text uses your text styles — not raw font properties
-- Colors bound to your variables — not hardcoded
+- Text uses your text styles, not raw font properties
+- Colors bound to your variables, not hardcoded
 - Spacing bound to your tokens where available
-- Every frame uses auto-layout — resizable, not static
-- Content matches the source exactly — nothing invented
+- Every frame uses auto-layout, resizable, not static
+- Content matches the source exactly, nothing invented
 - Your components used wherever a match exists
 - Charts built with real data and auto-layout
 - Build report with learning summary and DS gap recommendations
 
-The result is what you'd build manually — without the time cost.
+The result is what you'd build manually, without the time cost.
 
 Full specification: [`GOLDEN_RULES.md`](GOLDEN_RULES.md)
 
@@ -290,10 +290,10 @@ All clients need the bridge running and the Figma plugin active.
 
 Your AI assistant talks to Mimic. Mimic talks to Figma. Everything happens locally.
 
-- **Building is unlimited** — frames, components, and token bindings have no rate limit
-- **Inspecting is limited** — reading your library uses Figma's daily quota. Mimic caches aggressively to stay well under.
-- **Token bindings are real** — update a variable in your DS, re-publish, every node updates automatically
-- **Auto-layout everywhere** — every frame resizes correctly. Nothing is manually positioned.
+- **Building is unlimited.** Frames, components, and token bindings have no rate limit.
+- **Inspecting is limited.** Reading your library uses Figma's daily quota. Mimic caches aggressively to stay well under.
+- **Token bindings are real.** Update a variable in your DS, re-publish, and every node updates automatically.
+- **Auto-layout everywhere.** Every frame resizes correctly. Nothing is manually positioned.
 
 </details>
 
@@ -317,13 +317,13 @@ Your AI assistant talks to Mimic. Mimic talks to Figma. Everything happens local
 <details>
 <summary><strong>Figma setup details</strong></summary>
 
-**Desktop app required** — browser Figma won't work. [Download](https://www.figma.com/downloads/)
+**Desktop app required.** Browser Figma won't work. [Download](https://www.figma.com/downloads/)
 
-**Personal Access Token** — Figma → Profile → Settings → Personal access tokens → Generate. Read access. Copy immediately.
+**Personal Access Token.** Figma → Profile → Settings → Personal access tokens → Generate. Read access. Copy immediately.
 
-**Publish your DS** — components and tokens in a separate file, published as a team library. Re-publish after changes.
+**Publish your DS.** Components and tokens in a separate file, published as a team library. Re-publish after changes.
 
-**Professional plan or above** — free plan can't publish libraries.
+**Professional plan or above.** Free plan can't publish libraries.
 
 </details>
 
@@ -340,9 +340,9 @@ Mimic gets cheaper over time.
 | 10th+ (hot) | ~55 | Nearly everything cached, decisions instant |
 
 **What drives cost down:**
-- **Cache** — every pattern Mimic learns skips a DS search next time
-- **DS components** — inserting a component = ~3 calls. Building the same thing from primitives = ~10-15 calls
-- **DS gap recommendations** — when Mimic suggests a component, it's also telling you how to make future builds cheaper
+- **Cache:** every pattern Mimic learns skips a DS search next time
+- **DS components:** inserting a component = ~3 calls. Building the same thing from primitives = ~10-15 calls
+- **DS gap recommendations:** when Mimic suggests a component, it's also telling you how to make future builds cheaper
 
 Every build report includes tool call counts and efficiency savings.
 
@@ -362,10 +362,10 @@ The only outbound call is to the Figma REST API for published component keys.
 
 ## Constraints
 
-- **Figma Professional plan required** — free plan can't publish libraries
-- **First-build font caching** — text styles may need a second build to render correctly
-- **npx mode** — doesn't set `FIGMA_ACCESS_TOKEN`. Use the full installer for team library support
-- **Claude-optimized** — the 46-rule governance and learning reports work best with Claude Code. Other MCP clients get the tools but may not follow the full protocol
+- **Figma Professional plan required.** Free plan can't publish libraries.
+- **First-build font caching.** Text styles may need a second build to render correctly.
+- **npx mode.** Doesn't set `FIGMA_ACCESS_TOKEN`. Use the full installer for team library support.
+- **Claude-optimized.** The 46-rule governance and learning reports work best with Claude Code. Other MCP clients get the tools but may not follow the full protocol.
 
 ---
 

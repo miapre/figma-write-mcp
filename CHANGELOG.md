@@ -21,14 +21,14 @@
 ## 1.3.1 (2026-04-23)
 
 ### Fixed
-- **README tool count**: Updated from 35 to 45 — added 10 tools that were missing from the documentation (batch, ellipse, chart, discover styles/variables, compliance, restyle, tag exception, pipeline resolve, render URL, DESIGN.md generator).
+- **README tool count**: Updated from 35 to 45. Added 10 tools that were missing from the documentation (batch, ellipse, chart, discover styles/variables, compliance, restyle, tag exception, pipeline resolve, render URL, DESIGN.md generator).
 - **KNOWN_ISSUES accuracy**: Configuration recipes status updated (active since v1.2.0, not "being rolled out"). Added npx mode `FIGMA_ACCESS_TOKEN` limitation.
 - **Boundary violation**: Removed internal DS name from `mimic_ai_knowledge_write` tool description.
 
 ## 1.3.0 (2026-04-23)
 
 ### Added
-- **Efficiency tracking in build reports**: New "Efficiency" section shows total tool calls, cache hits, saved-vs-cold estimates, and DS component call savings. Zero extra tool calls — uses counters already tracked in-memory during builds.
+- **Efficiency tracking in build reports**: New "Efficiency" section shows total tool calls, cache hits, saved-vs-cold estimates, and DS component call savings. Zero extra tool calls. Uses counters already tracked in-memory during builds.
 - **Economic DS gap recommendations**: Gap recommendations now include tool-call savings estimates. "Adding a Metric Card would save ~20 calls/build" instead of just "seen 5 times." Helps users prioritize which DS components to add.
 - **Efficiency line in Phase 5 output**: Terminal summary now shows tool call count, cache hits, and savings. One line, zero extra cost.
 - **README cost & efficiency section**: Honest cost model showing how builds get cheaper over time (cold ~140 calls → warm ~80 → hot ~55). Documents what drives cost down and what users can do about it.
@@ -45,7 +45,7 @@
 
 ### Added
 - **Build report generator** (`mimic_generate_build_report`): Compiles DS compliance data, learned patterns, and gap recommendations into a structured report (markdown or HTML). Shareable with your team.
-- **DESIGN.md generator** (`mimic_generate_design_md`): Compiles your DS into the open DESIGN.md format — compatible with Google Stitch, generative UI tools, and AI coding agents. Includes color tokens, typography, spacing, radius, and component patterns from builds.
+- **DESIGN.md generator** (`mimic_generate_design_md`): Compiles your DS into the open DESIGN.md format, compatible with Google Stitch, generative UI tools, and AI coding agents. Includes color tokens, typography, spacing, radius, and component patterns from builds.
 - **Component description suggestions**: Workflow for generating component descriptions from Mimic's usage data. Ask Mimic to suggest descriptions based on how components are actually used across builds.
 - **No-internal-names rule** in CLAUDE.md: Creator's company/brand names never appear in committed files.
 
@@ -56,20 +56,20 @@
 ## 1.1.6 (2026-04-22)
 
 ### Added
-- **Rules 45-46**: Artboard always 1440px FIXED width. HTML container fidelity via `maxWidth` — CSS `max-width + margin: auto` maps to Figma FILL + maxWidth + parent CENTER.
+- **Rules 45-46**: Artboard always 1440px FIXED width. HTML container fidelity via `maxWidth`. CSS `max-width + margin: auto` maps to Figma FILL + maxWidth + parent CENTER.
 - **CSS → Figma mapping table** in CLAUDE.md: flex/grid properties map 1:1 to auto-layout (direction, sizing, gap, alignment, overflow).
 - **`maxWidth` / `minWidth`** support on `create_frame` and `set_layout_sizing`.
 - **Role obligations restructure**: builder vs end-user context with concrete obligation lists. Phase 5 explicitly mandatory even during bug-fixing sessions.
 
 ### Fixed
-- **Bar chart handler rewrite**: bars distribute evenly via `layoutGrow:1`, bottom-aligned via `counterAxisAlignItems: MAX`. Removed absolute-positioned plot-area — bars now participate in auto-layout and fill their container correctly.
+- **Bar chart handler rewrite**: bars distribute evenly via `layoutGrow:1`, bottom-aligned via `counterAxisAlignItems: MAX`. Removed absolute-positioned plot-area. Bars now participate in auto-layout and fill their container correctly.
 - **Donut chart legend (bottom)**: auto-layout VERTICAL with SPACE_BETWEEN items (label+dot left, percentage right). Donut geometry in separate NONE-layout sub-frame.
 - **`set_node_fill` reporting**: fallback path now correctly returns `applied: true` when fill is applied to a frame.
 
 ## 1.1.5 (2026-04-22)
 
 ### Added
-- **Community library full support**: components, text styles, and variables all work. Variables use key-based import — discovered via Figma REST API, imported via Plugin API `importVariableByKeyAsync`.
+- **Community library full support**: components, text styles, and variables all work. Variables use key-based import, discovered via Figma REST API, imported via Plugin API `importVariableByKeyAsync`.
 - **`textFillVariable`** on `set_session_defaults`: alternative to `textFillStyleKey` for DSs that use variables instead of color styles (community libraries).
 - **`plugin_connected`** field on `mimic_status` response.
 - **DS enforcement modes**: `dsMode: "strict"` rejects raw values, `"permissive"` allows fallbacks. Set via `set_session_defaults`.
@@ -82,7 +82,7 @@
 - **Bridge status detection**: `mimic_status` was hitting `/health` (404) instead of `/status`. Bridge always reported as down.
 - **DS-agnostic enforcement**: removed 20+ hardcoded Inter font references and 14+ Untitled UI color values from plugin code. All DS-specific values now come from session defaults or runtime discovery.
 - **Text style font loading**: plugin applies text style BEFORE setting characters, ensuring the correct font family loads (fixes Roboto/SF Pro not rendering on community libraries).
-- **`textFillStyleKey` no longer required** on `set_session_defaults` — was blocking variable-only DSs.
+- **`textFillStyleKey` no longer required** on `set_session_defaults`. Was blocking variable-only DSs.
 
 ### Changed
 - **44 → 46 golden rules**: added Rule 43 (DS-only foundational constraint), Rule 44 (mandatory stop), expanded Rule 38 (zero raw values).
