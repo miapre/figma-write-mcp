@@ -28,6 +28,18 @@ var sessionDefaults = {
   dsMode: 'permissive',     // 'strict' = DS references required, raw values rejected. 'permissive' = raw fallbacks allowed. Set to 'strict' via set_session_defaults when DS is connected.
 };
 
+// Phase 1 enforcement: tracks whether DS discovery has been performed in this session.
+// When dsMode is 'strict' and this is false, creating a new artboard (page-level frame)
+// returns a warning reminding the orchestrator that Phase 1 is mandatory.
+// Set to true by: insert_component, preload_styles, preload_variables, discover_library_styles,
+// discover_library_variables, or any operation that proves the orchestrator engaged with the DS.
+var dsDiscoveryPerformed = false;
+
+// Session-level cache of component keys that failed to import.
+// Prevents repeated 45s+ waits on keys that are known to fail in this session.
+// Cleared when set_session_defaults is called (new build = fresh session).
+var failedComponentKeys = new Map(); // Map<componentKey, errorMessage>
+
 async function getVariableByPath(path) {
   if (!variableCache) {
     const vars = await figma.variables.getLocalVariablesAsync();
@@ -283,7 +295,16 @@ async function loadFont(weight) {
 // ---------------------------------------------------------------------------
 
 async function handleInsertComponent(params) {
+  dsDiscoveryPerformed = true;
   let component = null;
+
+  // Fast-fail: if this component key already failed in this session, return the
+  // cached error immediately instead of waiting another 90s. Prevents the cascade
+  // of failed imports that destabilizes the plugin connection.
+  if (params.componentKey && failedComponentKeys.has(params.componentKey)) {
+    const cachedError = failedComponentKeys.get(params.componentKey);
+    throw new Error('Component not found (key: ' + params.componentKey + ', nodeId: ' + (params.nodeId || 'none') + '). ' + cachedError + ' [cached — this key failed earlier in this session]');
+  }
 
   // Import timeout — prevents indefinite hangs when Figma API is unresponsive.
   // Normal imports complete in <2s. Cold start with large libraries (3+ DSs enabled)
@@ -327,41 +348,60 @@ async function handleInsertComponent(params) {
     }, 30000);
 
     // Race both import methods in parallel — whichever resolves first wins.
-    // Track failures from both attempts so we can reject immediately when both fail
-    // instead of waiting 55s for the timeout.
-    try {
-      var raceResult = await withTimeout(
-        new Promise(function(resolve, reject) {
-          var settled = false;
-          var failCount = 0;
-          var failErrors = [];
-          function checkAllFailed() {
-            failCount++;
-            if (failCount >= 2 && !settled) {
-              settled = true;
-              reject(new Error('neither import resolved — component: ' + (failErrors[0] || 'unknown') + ', set: ' + (failErrors[1] || 'unknown')));
-            }
+    // Retries with backoff to handle library cold-start: first attempts often
+    // timeout when the library hasn't been accessed yet in this session. After
+    // the first successful import warms the connection, subsequent imports are fast.
+    var MAX_RETRIES = 2;
+    var ATTEMPT_TIMEOUT = 45000; // 45s per attempt — complex component sets (Input, Dropdown, Toggle) need 20-40s on cold start
+
+    function attemptImport() {
+      return new Promise(function(resolve, reject) {
+        var settled = false;
+        var failCount = 0;
+        var failErrors = [];
+        function checkAllFailed() {
+          failCount++;
+          if (failCount >= 2 && !settled) {
+            settled = true;
+            reject(new Error('neither import resolved — component: ' + (failErrors[0] || 'unknown') + ', set: ' + (failErrors[1] || 'unknown')));
           }
-          // Attempt 1: import as individual component
-          figma.importComponentByKeyAsync(params.componentKey).then(function(comp) {
-            if (!settled) { settled = true; resolve({ type: 'component', value: comp }); }
-          }).catch(function(e) { failErrors[0] = e.message || String(e); checkAllFailed(); });
-          // Attempt 2: import as component set
-          figma.importComponentSetByKeyAsync(params.componentKey).then(function(compSet) {
-            if (!settled) { settled = true; resolve({ type: 'set', value: compSet }); }
-          }).catch(function(e) { failErrors[1] = e.message || String(e); checkAllFailed(); });
-          // Safety timeout in case one attempt hangs without resolving or rejecting
-          setTimeout(function() { if (!settled) { settled = true; reject(new Error('import timed out after 55s — failCount=' + failCount + ', errors: ' + failErrors.join('; '))); } }, 55000);
-        }),
-        'parallel component import'
-      );
+        }
+        figma.importComponentByKeyAsync(params.componentKey).then(function(comp) {
+          if (!settled) { settled = true; resolve({ type: 'component', value: comp }); }
+        }).catch(function(e) { failErrors[0] = e.message || String(e); checkAllFailed(); });
+        figma.importComponentSetByKeyAsync(params.componentKey).then(function(compSet) {
+          if (!settled) { settled = true; resolve({ type: 'set', value: compSet }); }
+        }).catch(function(e) { failErrors[1] = e.message || String(e); checkAllFailed(); });
+        setTimeout(function() { if (!settled) { settled = true; reject(new Error('attempt timed out after ' + (ATTEMPT_TIMEOUT/1000) + 's')); } }, ATTEMPT_TIMEOUT);
+      });
+    }
+
+    try {
+      var raceResult = null;
+      var lastError = null;
+      for (var attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          if (attempt > 1) {
+            figma.notify('Retry ' + attempt + '/' + MAX_RETRIES + ' — warming library connection...', { timeout: 5000 });
+          }
+          raceResult = await attemptImport();
+          break; // success
+        } catch (e) {
+          lastError = e;
+          if (attempt < MAX_RETRIES) {
+            // Brief pause before retry to let Figma's import pipeline recover
+            await new Promise(function(r) { setTimeout(r, 2000); });
+          }
+        }
+      }
+      if (!raceResult && lastError) throw lastError;
       if (raceResult.type === 'component') {
         component = raceResult.value;
       } else if (raceResult.type === 'set' && raceResult.value) {
         component = raceResult.value.defaultVariant || raceResult.value.children[0];
       }
     } catch (e) {
-      importError = 'Component import failed: ' + e.message + '. This can happen with community libraries — Figma\'s API may not support importing components from community-published files. Verify: (1) the library is a team/org library, not a community file, (2) it is published and enabled in this file.';
+      importError = 'Component import failed after ' + MAX_RETRIES + ' attempts: ' + e.message + '. This can happen with community libraries — Figma\'s API may not support importing components from community-published files. Verify: (1) the library is a team/org library, not a community file, (2) it is published and enabled in this file.';
     }
 
     // Clear all pending notifications
@@ -369,9 +409,13 @@ async function handleInsertComponent(params) {
     clearTimeout(notify15);
     clearTimeout(notify30);
 
-    // If import failed, store error for the final error message
+    // If import failed, cache the failure so subsequent calls for the same key
+    // return immediately instead of waiting another 90s and destabilizing the plugin.
     if (!component && importError) {
       params._importError = importError;
+      if (params.componentKey) {
+        failedComponentKeys.set(params.componentKey, importError);
+      }
     }
   }
 
@@ -476,6 +520,17 @@ async function handleInsertComponent(params) {
 }
 
 async function handleCreateFrame(params) {
+  // Phase 1 enforcement: warn if creating a page-level frame (artboard) without DS discovery.
+  // This is the product's core gate — without discovery, the build uses no DS components.
+  var phase1Warning = null;
+  const isArtboard = !params.parentNodeId && !params.parentId;
+  if (isArtboard && sessionDefaults.dsMode === 'strict' && !dsDiscoveryPerformed) {
+    phase1Warning = 'DS_DISCOVERY_REQUIRED: No DS discovery performed in this session. ' +
+      'Phase 1 (DS Discovery) is mandatory before building. ' +
+      'Run discover_library_styles, discover_library_variables, preload_styles, or insert_component first. ' +
+      'Building without DS discovery produces primitive-only output — the opposite of what Mimic does.';
+  }
+
   const frame = figma.createFrame();
   frame.name = params.name || 'Frame';
 
@@ -665,6 +720,7 @@ async function handleCreateFrame(params) {
     frameWarnings.push('Frame stroke is raw hex — Rule 38 violation. Use strokeVariable with a DS color variable.');
   }
   if (layoutWarning) frameWarnings.push(layoutWarning);
+  if (phase1Warning) frameWarnings.push(phase1Warning);
 
   return { nodeId: frame.id, name: frame.name, dsCompliance: frameDsCompliance, warnings: frameWarnings.length > 0 ? frameWarnings : undefined };
 }
@@ -961,6 +1017,73 @@ async function handleCreateEllipse(params) {
   return { nodeId: ellipse.id };
 }
 
+// SVG import — for line chart paths, radar polygons, area fills, polar areas.
+// figma.createNodeFromSvg() returns a FrameNode containing the SVG vectors.
+// After import, child vector nodes can have DS color variables applied via applyFill.
+async function handleCreateSvg(params) {
+  if (!params.svg) throw new Error('svg parameter is required (SVG markup string)');
+  const frame = figma.createNodeFromSvg(params.svg);
+  frame.name = params.name || 'SVG';
+
+  // Optionally apply DS fill to vector children (overrides SVG inline colors).
+  // IMPORTANT: Skip vectors that already have a fill with opacity < 1 — these are
+  // intentional semi-transparent fills (e.g., area chart backgrounds with fill-opacity).
+  // Applying fillVariable would override the opacity and make them fully opaque.
+  if (params.fillVariable || params.fillHex) {
+    const vectors = frame.findAll(function(n) { return n.type === 'VECTOR' || n.type === 'BOOLEAN_OPERATION'; });
+    for (var vi = 0; vi < vectors.length; vi++) {
+      var vec = vectors[vi];
+      var hasSemiTransparentFill = false;
+      if (vec.fills && vec.fills.length > 0) {
+        for (var fi = 0; fi < vec.fills.length; fi++) {
+          if (vec.fills[fi].opacity !== undefined && vec.fills[fi].opacity < 1) {
+            hasSemiTransparentFill = true;
+            break;
+          }
+        }
+      }
+      if (!hasSemiTransparentFill) {
+        await applyFill(vec, params.fillVariable, params.fillHex);
+      }
+    }
+  }
+
+  // Optionally apply DS stroke to all vector children
+  // Preserves each vector's existing strokeWeight from the SVG markup unless strokeWidth is explicitly passed.
+  if (params.strokeVariable || params.strokeHex) {
+    const vectors = frame.findAll(function(n) { return n.type === 'VECTOR' || n.type === 'BOOLEAN_OPERATION'; });
+    for (var si = 0; si < vectors.length; si++) {
+      vectors[si].fills = [];
+      var existingWeight = (vectors[si].strokes && vectors[si].strokes.length > 0) ? vectors[si].strokeWeight : 1;
+      await applyStroke(vectors[si], params.strokeVariable, params.strokeHex, params.strokeWidth || existingWeight);
+    }
+  }
+
+  // Clear fills on the wrapper frame (SVG import adds a white fill by default)
+  if (params.fillNone !== false) {
+    frame.fills = [];
+  }
+
+  const parentRef = params.parentNodeId || params.parentId;
+  if (parentRef) {
+    const parent = figma.getNodeById(parentRef);
+    if (!parent || !('appendChild' in parent)) throw new Error('Parent ' + parentRef + ' not found');
+    parent.appendChild(frame);
+  } else {
+    figma.currentPage.appendChild(frame);
+  }
+
+  if (params.width && params.height) frame.resize(Number(params.width), Number(params.height));
+  applyLayoutSizing(frame, params);
+  if (params.x !== undefined) frame.x = params.x;
+  if (params.y !== undefined) frame.y = params.y;
+
+  return {
+    nodeId: frame.id,
+    childCount: frame.children ? frame.children.length : 0,
+  };
+}
+
 async function handleSetComponentText(params) {
   const node = figma.getNodeById(params.nodeId);
   if (!node) throw new Error(`Node ${params.nodeId} not found`);
@@ -1202,6 +1325,12 @@ function handleSetVisibility(params) {
 // discovers the right keys from the DS knowledge layer and passes them here.
 // params: { textFillStyleKey?: string, textFillVariable?: string, fontFamily?: string, dsMode?: string }
 async function handleSetSessionDefaults(params) {
+  // Reset Phase 1 gate for new build sessions. The orchestrator must perform
+  // DS discovery again before creating artboards.
+  dsDiscoveryPerformed = false;
+  // Clear failed component cache — new session, fresh start.
+  failedComponentKeys.clear();
+
   if (params.textFillStyleKey) {
     // Preload the color style so it's available in the cache
     try {
@@ -1742,6 +1871,7 @@ async function handleListTextStyles() {
 // Uses figma.teamLibrary API to enumerate across all enabled libraries.
 // Returns style keys that can be passed to preload_styles / importStyleByKeyAsync.
 async function handleDiscoverLibraryStyles(params) {
+  dsDiscoveryPerformed = true;
   const nameFilter = params.nameFilter || null;
   const textStyles = [];
   const colorStyles = [];
@@ -1788,6 +1918,7 @@ async function handleDiscoverLibraryStyles(params) {
 // Discover ALL library variable collections and their variables.
 // Returns variable keys grouped by collection, usable with importVariableByKeyAsync.
 async function handleDiscoverLibraryVariables(params) {
+  dsDiscoveryPerformed = true;
   const nameFilter = params.nameFilter || null;
   const collections = [];
 
@@ -1992,7 +2123,7 @@ async function makeChartOuter(name, parentNodeId, w, h) {
   f.name = name;
   f.resize(w, h);
   f.fills = [];
-  f.clipsContent = false;
+  f.clipsContent = true;
   chartDsBound.bg = false;
   chartDsBound.radius = false;
 
@@ -2025,6 +2156,26 @@ async function makeChartOuter(name, parentNodeId, w, h) {
   return f;
 }
 
+// Apply DS text style + fill variable to a chart text node.
+// Call this after creating ANY text node inside a chart handler to ensure DS compliance.
+// Uses chartDsContext.labelTextStyleId and chartDsContext.labelFillVariable.
+// fallbackRGB is used only if the DS variable cannot be bound.
+async function applyChartTextDS(textNode, fallbackRGB) {
+  if (chartDsContext && chartDsContext.labelTextStyleId) {
+    try { await applyTextStyle(textNode, chartDsContext.labelTextStyleId); } catch(_) {}
+  }
+  var fillBound = false;
+  if (chartDsContext && chartDsContext.labelFillVariable) {
+    try {
+      var result = await applyFill(textNode, chartDsContext.labelFillVariable);
+      fillBound = result && result.bound;
+    } catch(_) {}
+  }
+  if (!fillBound && fallbackRGB) {
+    textNode.fills = [{ type: 'SOLID', color: fallbackRGB }];
+  }
+}
+
 // Append a 1px grid line rectangle to a frame
 // DS-aware: tries to use grid color from chartDsContext.
 async function gridLine(parent, x, y, w, h) {
@@ -2040,7 +2191,7 @@ async function gridLine(parent, x, y, w, h) {
     } catch(_) {}
   }
   if (!gridBound) {
-    r.fills = [{ type: 'SOLID', color: { r: 0.906, g: 0.918, b: 0.933 } }];
+    r.fills = [{ type: 'SOLID', color: { r: 0.22, g: 0.24, b: 0.28 } }]; // neutral mid — works on both light and dark
   }
   r.strokes = [];
   parent.appendChild(r);
@@ -2100,7 +2251,16 @@ async function handleScatterChart(params) {
   const data         = params.data   || [];
   const categories   = params.categories   || {};
   const catOrder     = params.categoryOrder || Object.keys(categories);
-  const xDomain      = params.xDomain  || [0, 1];
+  // Auto-derive xDomain from data if not provided
+  var xDomain = params.xDomain;
+  if (!xDomain && data.length > 0) {
+    var allXs = data.map(function(d) { return d.x; });
+    var xMin = Math.min.apply(null, allXs);
+    var xMax = Math.max.apply(null, allXs);
+    var xPad = (xMax - xMin) * 0.1 || 10;
+    xDomain = [Math.max(0, xMin - xPad), xMax + xPad];
+  }
+  if (!xDomain) xDomain = [0, 1];
   const xTicks       = params.xTicks   || [];
   const tickSuffix   = params.tickSuffix !== undefined ? params.tickSuffix : '';
   const xLabel       = params.xLabel   || '';
@@ -2136,7 +2296,7 @@ async function handleScatterChart(params) {
 
   // Outer frame
   const outer = await makeChartOuter(chartName, params.parentNodeId, w, h);
-  if (!chartDsBound.bg) outer.fills = [{ type: 'SOLID', color: { r: 0.97, g: 0.97, b: 0.97 } }];
+  if (!chartDsBound.bg) outer.fills = []; // transparent — inherits parent background
   if (!chartDsBound.radius) outer.cornerRadius = 8;
 
   // ── Plot clip frame ────────────────────────────────────────────────────────
@@ -2198,8 +2358,7 @@ async function handleScatterChart(params) {
 
   // X-axis label
   if (xLabel) {
-    await chartLabel(outer, xLabel, plotX + plotW / 2, h - 18, 12,
-                     { r: 0.13, g: 0.13, b: 0.13 }, 'center');
+    await chartLabel(outer, xLabel, plotX + plotW / 2, h - 18, 12, null, 'center');
   }
 
   // Legend (top-right, right → left)
@@ -2212,7 +2371,8 @@ async function handleScatterChart(params) {
     ltxt.fontName = { family: sessionDefaults.fontFamily || 'Inter', style: 'Regular' };
     ltxt.fontSize = 11;
     ltxt.characters = cat;
-    ltxt.fills = [{ type: 'SOLID', color: { r: 0.13, g: 0.13, b: 0.13 } }];
+    ltxt.fills = [{ type: 'SOLID', color: { r: 0.43, g: 0.47, b: 0.55 } }];
+    await applyChartTextDS(ltxt, { r: 0.43, g: 0.47, b: 0.55 });
     outer.appendChild(ltxt);
     lx -= ltxt.width;
     ltxt.x = lx;
@@ -2220,7 +2380,10 @@ async function handleScatterChart(params) {
 
     const ldot = figma.createEllipse();
     ldot.resize(9, 9);
-    ldot.fills   = [{ type: 'SOLID', color }];
+    var ldotVar = catVars[cat] || null;
+    try { await applyFill(ldot, ldotVar, categories[cat] || '#888888'); } catch(_) {
+      ldot.fills = [{ type: 'SOLID', color }];
+    }
     ldot.strokes = [];
     lx -= 13;
     ldot.x = lx;
@@ -2244,8 +2407,18 @@ async function handleLineChart(params) {
   const w     = params.width  || 800;
   const h     = params.height || 300;
   const series    = params.series   || [];
-  const xDomain   = params.xDomain  || [0, 1];
-  const yDomain   = params.yDomain  || [0, 1];
+  // Auto-derive domains from data if not explicitly provided
+  var xDomain = params.xDomain;
+  var yDomain = params.yDomain;
+  if (!xDomain || !yDomain) {
+    var allX = [], allY = [];
+    for (var si = 0; si < series.length; si++) {
+      var pts = series[si].data || [];
+      for (var pi = 0; pi < pts.length; pi++) { allX.push(pts[pi].x); allY.push(pts[pi].y); }
+    }
+    if (!xDomain) xDomain = allX.length > 0 ? [Math.min.apply(null, allX), Math.max.apply(null, allX)] : [0, 1];
+    if (!yDomain) yDomain = allY.length > 0 ? [Math.min.apply(null, allY) * 0.9, Math.max.apply(null, allY) * 1.1] : [0, 1];
+  }
   const xTicks    = params.xTicks   || [];
   const yTicks    = params.yTicks   || [];
   const xTickSfx  = params.xTickSuffix !== undefined ? params.xTickSuffix : '';
@@ -2256,101 +2429,191 @@ async function handleLineChart(params) {
 
   await figma.loadFontAsync({ family: sessionDefaults.fontFamily || 'Inter', style: 'Regular' });
 
-  const PAD_L = 52;
-  const PAD_T = 8;
-  const PAD_R = 16;
-  const PAD_B = 36;
-  const LEG_H = 24;
+  const PAD_Y_AXIS = 48;   // space for y-axis tick labels
+  const LEGEND_H   = 20;   // legend row height
+  const X_LABEL_H  = 20;   // x-axis label row height
 
-  const plotX = PAD_L;
-  const plotY = PAD_T + LEG_H;
-  const plotW = w - PAD_L - PAD_R;
-  const plotH = h - PAD_T - LEG_H - PAD_B;
-
-  const xScale = v => plotX + (v - xDomain[0]) / (xDomain[1] - xDomain[0]) * plotW;
-  const yScale = v => plotY + plotH - (v - yDomain[0]) / (yDomain[1] - yDomain[0]) * plotH;
-
+  // ── Outer: VERTICAL auto-layout, FIXED size ────────────────────────────────
   const outer = await makeChartOuter(chartName, params.parentNodeId, w, h);
-  if (!chartDsBound.bg) outer.fills = [{ type: 'SOLID', color: { r: 0.97, g: 0.97, b: 0.97 } }];
+  if (!chartDsBound.bg) outer.fills = [];
   if (!chartDsBound.radius) outer.cornerRadius = 8;
+  outer.layoutMode = 'VERTICAL';
+  outer.primaryAxisAlignItems = 'MIN';
+  outer.counterAxisAlignItems = 'MIN';
+  outer.paddingTop = 8;
+  outer.paddingBottom = 8;
+  outer.paddingLeft = 0;
+  outer.paddingRight = 8;
+  outer.itemSpacing = 4;
+  outer.layoutSizingHorizontal = 'FIXED';
+  outer.layoutSizingVertical = 'FIXED';
 
-  // Grid lines
-  for (const tick of yTicks) await gridLine(outer, plotX, yScale(tick), plotW, 1);
-  for (const tick of xTicks) await gridLine(outer, xScale(tick), plotY, 1, plotH);
-  await gridLine(outer, plotX, plotY + plotH, plotW, 1); // x-axis baseline
-  await gridLine(outer, plotX, plotY, 1, plotH);          // y-axis baseline
+  // ── Legend row: HORIZONTAL auto-layout, right-aligned ──────────────────────
+  const legendRow = figma.createFrame();
+  legendRow.name = 'legend';
+  legendRow.layoutMode = 'HORIZONTAL';
+  legendRow.primaryAxisAlignItems = 'MAX';
+  legendRow.counterAxisAlignItems = 'CENTER';
+  legendRow.itemSpacing = 16;
+  legendRow.paddingRight = 8;
+  legendRow.fills = [];
+  outer.appendChild(legendRow);
+  legendRow.layoutSizingHorizontal = 'FILL';
+  legendRow.layoutSizingVertical = 'HUG';
 
-  // Axis tick labels
-  for (const tick of yTicks) {
-    await chartLabel(outer, String(tick) + yTickSfx, plotX - 4, yScale(tick) - 8, 11, null, 'right');
+  for (const s of series) {
+    const entry = figma.createFrame();
+    entry.name = s.name || 'series';
+    entry.layoutMode = 'HORIZONTAL';
+    entry.counterAxisAlignItems = 'CENTER';
+    entry.itemSpacing = 6;
+    entry.fills = [];
+    legendRow.appendChild(entry);
+
+    const sw = figma.createRectangle();
+    sw.resize(16, 3);
+    sw.fills = [{ type: 'SOLID', color: hexToRgb(s.color || '#6941C6') }];
+    sw.cornerRadius = 2;
+    entry.appendChild(sw);
+
+    const ltxt = figma.createText();
+    ltxt.fontName = { family: sessionDefaults.fontFamily || 'Inter', style: 'Regular' };
+    ltxt.fontSize = 11;
+    ltxt.characters = s.name || '';
+    ltxt.fills = [{ type: 'SOLID', color: { r: 0.43, g: 0.47, b: 0.55 } }];
+    entry.appendChild(ltxt);
+    await applyChartTextDS(ltxt, { r: 0.43, g: 0.47, b: 0.55 });
   }
-  for (const tick of xTicks) {
-    await chartLabel(outer, String(tick) + xTickSfx, xScale(tick), plotY + plotH + 8, 11, null, 'center');
+
+  // ── Plot area: HORIZONTAL row with y-axis labels + plot frame ──────────────
+  const plotRow = figma.createFrame();
+  plotRow.name = 'plot-row';
+  plotRow.layoutMode = 'HORIZONTAL';
+  plotRow.counterAxisAlignItems = 'MIN';
+  plotRow.itemSpacing = 4;
+  plotRow.fills = [];
+  outer.appendChild(plotRow);
+  plotRow.layoutSizingHorizontal = 'FILL';
+  plotRow.layoutSizingVertical = 'FILL';
+
+  // Y-axis labels column
+  const yAxisCol = figma.createFrame();
+  yAxisCol.name = 'y-axis';
+  yAxisCol.layoutMode = 'VERTICAL';
+  yAxisCol.primaryAxisAlignItems = 'SPACE_BETWEEN';
+  yAxisCol.counterAxisAlignItems = 'MAX';
+  yAxisCol.fills = [];
+  yAxisCol.resize(PAD_Y_AXIS, 10);
+  plotRow.appendChild(yAxisCol);
+  yAxisCol.layoutSizingHorizontal = 'FIXED';
+  yAxisCol.layoutSizingVertical = 'FILL';
+
+  // Y-axis tick labels (top to bottom = high to low)
+  var sortedYTicks = [...yTicks].sort(function(a, b) { return b - a; });
+  for (var yi = 0; yi < sortedYTicks.length; yi++) {
+    var ytNode = figma.createText();
+    ytNode.fontName = { family: sessionDefaults.fontFamily || 'Inter', style: 'Regular' };
+    ytNode.fontSize = 11;
+    ytNode.characters = String(sortedYTicks[yi]) + yTickSfx;
+    ytNode.textAlignHorizontal = 'RIGHT';
+    ytNode.fills = [{ type: 'SOLID', color: { r: 0.43, g: 0.47, b: 0.55 } }];
+    yAxisCol.appendChild(ytNode);
+    await applyChartTextDS(ytNode, { r: 0.43, g: 0.47, b: 0.55 });
   }
 
-  if (xLabel) await chartLabel(outer, xLabel, plotX + plotW / 2, h - 18, 12, { r: 0.13, g: 0.13, b: 0.13 }, 'center');
-  if (yLabel) await chartLabel(outer, yLabel, 4, plotY + plotH / 2, 12, { r: 0.13, g: 0.13, b: 0.13 }, 'left');
+  // Plot frame: NONE layout — absolute geometry inside, clipped
+  // Calculate dimensions from known outer size (auto-layout hasn't computed yet)
+  var plotW = w - PAD_Y_AXIS - 4 - 8; // outer width minus y-axis column, gap, right padding
+  var plotH = h - 8 - LEGEND_H - 4 - X_LABEL_H - 4 - 8; // minus top pad, legend, gaps, x-labels, bottom pad
+  if (plotW < 50) plotW = 50;
+  if (plotH < 50) plotH = 50;
+
+  const plotFrame = figma.createFrame();
+  plotFrame.name = 'plot';
+  plotFrame.resize(plotW, plotH);
+  plotFrame.fills = [];
+  plotFrame.clipsContent = true;
+  plotRow.appendChild(plotFrame);
+  plotFrame.layoutSizingHorizontal = 'FILL';
+  plotFrame.layoutSizingVertical = 'FILL';
+
+  // Scale functions relative to the plot frame (0,0 is top-left of plotFrame)
+  const xScale = v => (v - xDomain[0]) / (xDomain[1] - xDomain[0]) * plotW;
+  const yScale = v => plotH - (v - yDomain[0]) / (yDomain[1] - yDomain[0]) * plotH;
+
+  // Grid lines inside plot frame
+  for (const tick of yTicks) await gridLine(plotFrame, 0, yScale(tick), plotW, 1);
+  await gridLine(plotFrame, 0, plotH - 1, plotW, 1); // x-axis baseline
 
   // Series
   for (const s of series) {
     if (!s.data || s.data.length < 2) continue;
     const color = hexToRgb(s.color || '#6941C6');
-    var seriesVarPath = s.colorVariable || null;
-    const pts   = [...s.data].sort((a, b) => a.x - b.x)
-                             .map(pt => ({ px: xScale(pt.x), py: yScale(pt.y) }));
+    const pts = [...s.data].sort((a, b) => a.x - b.x)
+                           .map(pt => ({ px: xScale(pt.x), py: yScale(pt.y) }));
 
     // Area fill
     if (s.area) {
-      const by = plotY + plotH;
-      let d = 'M ' + pts[0].px + ' ' + by;
+      let d = 'M ' + pts[0].px + ' ' + plotH;
       for (const p of pts) d += ' L ' + p.px + ' ' + p.py;
-      d += ' L ' + pts[pts.length - 1].px + ' ' + by + ' Z';
+      d += ' L ' + pts[pts.length - 1].px + ' ' + plotH + ' Z';
       const av = figma.createVector();
       av.vectorPaths = [{ windingRule: 'NONZERO', data: d }];
-      av.fills   = [{ type: 'SOLID', color, opacity: 0.15 }];
+      av.fills = [{ type: 'SOLID', color, opacity: 0.15 }];
       av.strokes = [];
-      outer.appendChild(av);
+      plotFrame.appendChild(av);
     }
 
     // Line (smooth cubic bezier)
     let d = 'M ' + pts[0].px + ' ' + pts[0].py;
     for (let i = 1; i < pts.length; i++) {
       const prev = pts[i - 1], curr = pts[i];
-      const cpx  = (prev.px + curr.px) / 2;
+      const cpx = (prev.px + curr.px) / 2;
       d += ' C ' + cpx + ' ' + prev.py + ' ' + cpx + ' ' + curr.py + ' ' + curr.px + ' ' + curr.py;
     }
     const lv = figma.createVector();
-    lv.vectorPaths  = [{ windingRule: 'NONZERO', data: d }];
-    lv.fills        = [];
-    lv.strokes      = [{ type: 'SOLID', color }];
+    lv.vectorPaths = [{ windingRule: 'NONZERO', data: d }];
+    lv.fills = [];
+    lv.strokes = [{ type: 'SOLID', color }];
     lv.strokeWeight = s.strokeWidth !== undefined ? s.strokeWidth : 2;
-    lv.strokeCap    = 'ROUND';
-    lv.strokeJoin   = 'ROUND';
-    outer.appendChild(lv);
+    lv.strokeCap = 'ROUND';
+    lv.strokeJoin = 'ROUND';
+    plotFrame.appendChild(lv);
   }
 
-  // Legend (top-right)
-  let lx = w - PAD_R;
-  for (let li = series.length - 1; li >= 0; li--) {
-    const s     = series[li];
-    const color = hexToRgb(s.color || '#6941C6');
-    const ltxt  = figma.createText();
-    ltxt.fontName  = { family: sessionDefaults.fontFamily || 'Inter', style: 'Regular' };
-    ltxt.fontSize  = 11;
-    ltxt.characters = s.name || '';
-    ltxt.fills = [{ type: 'SOLID', color: { r: 0.13, g: 0.13, b: 0.13 } }];
-    outer.appendChild(ltxt);
-    lx -= ltxt.width;
-    ltxt.x = lx; ltxt.y = 5;
+  // ── X-axis labels row: HORIZONTAL, SPACE_BETWEEN ──────────────────────────
+  const xLabelsRow = figma.createFrame();
+  xLabelsRow.name = 'x-labels';
+  xLabelsRow.layoutMode = 'HORIZONTAL';
+  xLabelsRow.primaryAxisAlignItems = 'SPACE_BETWEEN';
+  xLabelsRow.paddingLeft = PAD_Y_AXIS + 4;
+  xLabelsRow.fills = [];
+  outer.appendChild(xLabelsRow);
+  xLabelsRow.layoutSizingHorizontal = 'FILL';
+  xLabelsRow.layoutSizingVertical = 'HUG';
 
-    const sw = figma.createRectangle();
-    sw.resize(16, 3);
-    sw.fills = [{ type: 'SOLID', color }];
-    sw.cornerRadius = 2;
-    lx -= 20;
-    sw.x = lx; sw.y = 11;
-    outer.appendChild(sw);
-    lx -= 16;
+  for (const tick of xTicks) {
+    var xtNode = figma.createText();
+    xtNode.fontName = { family: sessionDefaults.fontFamily || 'Inter', style: 'Regular' };
+    xtNode.fontSize = 11;
+    xtNode.characters = String(tick) + xTickSfx;
+    xtNode.textAlignHorizontal = 'CENTER';
+    xtNode.fills = [{ type: 'SOLID', color: { r: 0.43, g: 0.47, b: 0.55 } }];
+    xLabelsRow.appendChild(xtNode);
+    await applyChartTextDS(xtNode, { r: 0.43, g: 0.47, b: 0.55 });
+  }
+
+  // ── X-axis title ──────────────────────────────────────────────────────────
+  if (xLabel) {
+    var xTitleNode = figma.createText();
+    xTitleNode.fontName = { family: sessionDefaults.fontFamily || 'Inter', style: 'Regular' };
+    xTitleNode.fontSize = 12;
+    xTitleNode.characters = xLabel;
+    xTitleNode.textAlignHorizontal = 'CENTER';
+    xTitleNode.fills = [{ type: 'SOLID', color: { r: 0.43, g: 0.47, b: 0.55 } }];
+    outer.appendChild(xTitleNode);
+    xTitleNode.layoutSizingHorizontal = 'FILL';
+    await applyChartTextDS(xTitleNode, { r: 0.43, g: 0.47, b: 0.55 });
   }
 
   return { nodeId: outer.id, name: outer.name };
@@ -2390,6 +2653,23 @@ function arcToBezier(cx, cy, R, a0, a1) {
 async function applyTextStyle(node, styleIdOrKey) {
   if (!styleIdOrKey) return false;
 
+  // Strategy 0: Check preloaded cache first (populated by preload_styles).
+  // This is the fastest path and avoids 20s import timeouts.
+  var cachedId = styleCache.get(styleIdOrKey);
+  if (cachedId) {
+    try {
+      node.textStyleId = cachedId;
+      return true;
+    } catch (_) {
+      // textStyleId assignment can fail if the font isn't loaded — try loading it
+      try {
+        await figma.loadFontAsync(node.fontName);
+        node.textStyleId = cachedId;
+        return true;
+      } catch (_2) { /* cache hit but assignment failed — try other strategies */ }
+    }
+  }
+
   // Strategy 1: If it looks like a Figma style ID (contains ":" or starts with "S:"), assign directly
   if (styleIdOrKey.includes(':') || styleIdOrKey.startsWith('S:')) {
     try {
@@ -2407,6 +2687,7 @@ async function applyTextStyle(node, styleIdOrKey) {
       new Promise((_, reject) => setTimeout(() => reject(new Error('style import timeout')), 20000)),
     ]);
     if (imported && imported.id) {
+      styleCache.set(key, imported.id); // cache for future use
       node.textStyleId = imported.id;
       return true;
     }
@@ -2505,8 +2786,9 @@ async function handleDonutChart(params) {
     slice.vectorPaths = [{ windingRule: 'NONZERO', data: d }];
     // Apply fill: use variable if provided, fall back to hex color
     await applyFill(slice, seg.colorVariable || null, seg.color || '#888888');
-    slice.strokes = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
-    slice.strokeWeight = 2;
+    // Slice separator — thin transparent gap between slices
+    slice.strokes = [];
+    slice.strokeWeight = 0;
     geoFrame.appendChild(slice);
 
     startAngle = endAngle;
@@ -2519,7 +2801,7 @@ async function handleDonutChart(params) {
     ct.fontSize  = 22;
     ct.characters = centerLabel;
     await applyTextStyle(ct, centerStyleId);
-    await applyFill(ct, centerColorVar, '#212121');
+    await applyChartTextDS(ct, { r: 0.43, g: 0.47, b: 0.55 });
     geoFrame.appendChild(ct);
     ct.x = cx - ct.width / 2;
     ct.y = cy - ct.height / 2 - (centerSub ? 10 : 0);
@@ -2530,7 +2812,7 @@ async function handleDonutChart(params) {
       cs.fontSize  = 12;
       cs.characters = centerSub;
       await applyTextStyle(cs, centerSubStyleId);
-      await applyFill(cs, centerSubColorVar, '#757575');
+      await applyChartTextDS(cs, { r: 0.43, g: 0.47, b: 0.55 });
       geoFrame.appendChild(cs);
       cs.x = cx - cs.width / 2;
       cs.y = cy + 6;
@@ -2588,7 +2870,7 @@ async function handleDonutChart(params) {
         lbl.fontSize  = 12;
         lbl.characters = seg.label || '';
         await applyTextStyle(lbl, params.legendTextStyleId || null);
-        await applyFill(lbl, params.labelFillVariable || null, '#212121');
+        await applyChartTextDS(lbl, { r: 0.43, g: 0.47, b: 0.55 });
         leftGroup.appendChild(lbl);
 
         // Right side: percentage
@@ -2597,7 +2879,7 @@ async function handleDonutChart(params) {
         valTxt.fontSize  = 12;
         valTxt.characters = pct + '%';
         await applyTextStyle(valTxt, params.legendTextStyleId || null);
-        await applyFill(valTxt, params.labelFillVariable || null, '#212121');
+        await applyChartTextDS(valTxt, { r: 0.43, g: 0.47, b: 0.55 });
         item.appendChild(valTxt);
       }
     } else {
@@ -2618,7 +2900,7 @@ async function handleDonutChart(params) {
         lbl.fontSize  = 12;
         lbl.characters = (seg.label || '') + '  ' + pct + '%';
         await applyTextStyle(lbl, params.legendTextStyleId || null);
-        await applyFill(lbl, null, '#212121');
+        await applyChartTextDS(lbl, { r: 0.43, g: 0.47, b: 0.55 });
         outer.appendChild(lbl);
         lbl.x = lx + 12; lbl.y = ly;
         ly += 22;
@@ -2647,14 +2929,15 @@ async function handleBarChart(params) {
   var   categories  = params.categories  || {};
 
   // Normalize flat bars → stacked segment format.
-  // MCP sends: [{label, value, color}, ...] (simple bars)
-  // Handler expects: [{label, segments: [{category, value}]}, ...] (stacked bars)
+  // MCP sends: [{label, value, color, colorVariable?}, ...] (simple bars)
+  // Handler expects: [{label, segments: [{category, value, colorVariable?}]}, ...] (stacked bars)
   var isFlatBars = false;
   for (var i = 0; i < bars.length; i++) {
     if (!bars[i].segments) {
       isFlatBars = true;
       var barColor = bars[i].color || '#888888';
-      bars[i].segments = [{ category: barColor, value: bars[i].value || 0 }];
+      var barColorVar = bars[i].colorVariable || null;
+      bars[i].segments = [{ category: barColor, value: bars[i].value || 0, colorVariable: barColorVar }];
       if (!categories[barColor]) categories[barColor] = barColor;
     }
   }
@@ -2662,7 +2945,18 @@ async function handleBarChart(params) {
   // The bars are self-descriptive via their x-axis labels.
   // Keep categories for color lookup but suppress the legend.
   var suppressLegend = isFlatBars;
-  const yDomain     = params.yDomain     || [0, 100];
+  // Auto-derive yDomain from bar data if not provided
+  var yDomain = params.yDomain;
+  if (!yDomain) {
+    var maxVal = 0;
+    for (var bi = 0; bi < bars.length; bi++) {
+      var segs = bars[bi].segments || [];
+      var barTotal = 0;
+      for (var si = 0; si < segs.length; si++) barTotal += (segs[si].value || 0);
+      if (barTotal > maxVal) maxVal = barTotal;
+    }
+    yDomain = [0, maxVal > 0 ? maxVal * 1.1 : 100]; // 10% headroom
+  }
   const yTicks      = params.yTicks      || [];
   const yTickSfx    = params.yTickSuffix !== undefined ? params.yTickSuffix : '';
   const xLabel      = params.xLabel  || '';
@@ -2683,7 +2977,7 @@ async function handleBarChart(params) {
 
   // ── Outer frame: VERTICAL auto-layout ──────────────────────────────────────
   const outer = await makeChartOuter(chartName, params.parentNodeId, w, h);
-  if (!chartDsBound.bg) outer.fills = [{ type: 'SOLID', color: { r: 0.97, g: 0.97, b: 0.97 } }];
+  if (!chartDsBound.bg) outer.fills = []; // transparent — inherits parent background
   if (!chartDsBound.radius) outer.cornerRadius = 8;
 
   // Cleanup on failure: if anything below throws, remove the outer frame so
@@ -2738,8 +3032,9 @@ async function handleBarChart(params) {
       ltxt.fontName  = { family: sessionDefaults.fontFamily || 'Inter', style: 'Regular' };
       ltxt.fontSize  = 11;
       ltxt.characters = cat;
-      ltxt.fills = [{ type: 'SOLID', color: { r: 0.13, g: 0.13, b: 0.13 } }];
+      ltxt.fills = [{ type: 'SOLID', color: { r: 0.43, g: 0.47, b: 0.55 } }];
       entry.appendChild(ltxt);
+      await applyChartTextDS(ltxt, { r: 0.43, g: 0.47, b: 0.55 });
 
       legendRow.appendChild(entry);
     }
@@ -2752,7 +3047,8 @@ async function handleBarChart(params) {
     yLabelNode.fontName = { family: sessionDefaults.fontFamily || 'Inter', style: 'Regular' };
     yLabelNode.fontSize = 10;
     yLabelNode.characters = yLabel;
-    yLabelNode.fills = [{ type: 'SOLID', color: { r: 0.46, g: 0.46, b: 0.46 } }];
+    yLabelNode.fills = [{ type: 'SOLID', color: { r: 0.43, g: 0.47, b: 0.55 } }];
+    await applyChartTextDS(yLabelNode, { r: 0.43, g: 0.47, b: 0.55 });
     const yLabelWrap = figma.createFrame();
     yLabelWrap.name = 'y-label';
     yLabelWrap.fills = [];
@@ -2777,7 +3073,8 @@ async function handleBarChart(params) {
   barRow.clipsContent = true;
   outer.appendChild(barRow);
   barRow.layoutSizingHorizontal = 'FILL';
-  barRow.layoutSizingVertical   = 'FILL';  // takes remaining vertical space
+  barRow.resize(barRow.width, plotH);
+  barRow.layoutSizingVertical   = 'FIXED';  // fixed height — bars proportional within this space
 
   // Build bars — each bar column gets layoutGrow: 1
   var barCatVars = params.categoryVariables || {};
@@ -2800,7 +3097,7 @@ async function handleBarChart(params) {
       rect.bottomRightRadius= 0;
       rect.strokes = [];
 
-      var barVarPath = barCatVars[seg.category] || null;
+      var barVarPath = seg.colorVariable || barCatVars[seg.category] || null;
       try {
         await applyFill(rect, barVarPath, segHex);
       } catch(_) {
@@ -2813,7 +3110,7 @@ async function handleBarChart(params) {
       col.name = bar.label || ('bar-' + i);
       col.layoutMode = 'VERTICAL';
       col.primaryAxisAlignItems = 'MAX';    // stack from bottom
-      col.counterAxisAlignItems = 'STRETCH';
+      col.counterAxisAlignItems = 'MIN';
       col.itemSpacing = 0;
       col.fills = [];
       col.layoutGrow = 1;
@@ -2829,10 +3126,9 @@ async function handleBarChart(params) {
         const rect = figma.createRectangle();
         rect.name  = seg.category;
         rect.resize(10, Math.max(1, segPx));
-        rect.layoutSizingHorizontal = 'FILL';
         rect.strokes = [];
 
-        var barVarPath2 = barCatVars[seg.category] || null;
+        var barVarPath2 = seg.colorVariable || barCatVars[seg.category] || null;
         try {
           await applyFill(rect, barVarPath2, segHex);
         } catch(_) {
@@ -2847,6 +3143,7 @@ async function handleBarChart(params) {
           rect.bottomRightRadius= 0;
         }
         col.appendChild(rect);
+        rect.layoutSizingHorizontal = 'FILL'; // must be set AFTER appendChild
       }
       barRow.appendChild(col);
     }
@@ -2891,10 +3188,11 @@ async function handleBarChart(params) {
         lbl.fontName  = { family: sessionDefaults.fontFamily || 'Inter', style: 'Regular' };
         lbl.fontSize  = 10;
         lbl.characters = g.label;
-        lbl.fills = [{ type: 'SOLID', color: { r: 0.46, g: 0.46, b: 0.46 } }];
+        lbl.fills = [{ type: 'SOLID', color: { r: 0.43, g: 0.47, b: 0.55 } }];
         lbl.textAlignHorizontal = 'CENTER';
         labelsRow.appendChild(lbl);
         lbl.layoutGrow = 1;
+        await applyChartTextDS(lbl, { r: 0.43, g: 0.47, b: 0.55 });
       } else {
         // Multi-bar group: wrapper frame that spans multiple bar slots
         const wrap = figma.createFrame();
@@ -2917,10 +3215,11 @@ async function handleBarChart(params) {
         lbl.fontName  = { family: sessionDefaults.fontFamily || 'Inter', style: 'Regular' };
         lbl.fontSize  = 10;
         lbl.characters = g.label;
-        lbl.fills = [{ type: 'SOLID', color: { r: 0.46, g: 0.46, b: 0.46 } }];
+        lbl.fills = [{ type: 'SOLID', color: { r: 0.43, g: 0.47, b: 0.55 } }];
         lbl.textAlignHorizontal = 'CENTER';
         wrap.appendChild(lbl);
         lbl.layoutSizingHorizontal = 'FILL';
+        await applyChartTextDS(lbl, { r: 0.43, g: 0.47, b: 0.55 });
       }
     }
   }
@@ -2931,10 +3230,11 @@ async function handleBarChart(params) {
     xLabelNode.fontName = { family: sessionDefaults.fontFamily || 'Inter', style: 'Regular' };
     xLabelNode.fontSize = 12;
     xLabelNode.characters = xLabel;
-    xLabelNode.fills = [{ type: 'SOLID', color: { r: 0.13, g: 0.13, b: 0.13 } }];
+    xLabelNode.fills = [{ type: 'SOLID', color: { r: 0.43, g: 0.47, b: 0.55 } }];
     xLabelNode.textAlignHorizontal = 'CENTER';
     outer.appendChild(xLabelNode);
     xLabelNode.layoutSizingHorizontal = 'FILL';
+    await applyChartTextDS(xLabelNode, { r: 0.43, g: 0.47, b: 0.55 });
   }
 
   return { nodeId: outer.id, name: outer.name };
@@ -3052,6 +3352,11 @@ async function handleRadarChart(params) {
 // ── Dispatcher ────────────────────────────────────────────────────────────────
 
 async function handleCreateChart(params) {
+  var chartWarning = null;
+  if (sessionDefaults.dsMode === 'strict') {
+    chartWarning = 'figma_create_chart produces partial DS compliance. For production builds, use native chart building (create_frame + create_text + create_svg + create_ellipse).';
+  }
+
   const t = params.chartType || '';
 
   // Set up DS context for chart helpers.
@@ -3084,6 +3389,25 @@ async function handleCreateChart(params) {
     });
   }
 
+  // Normalize scatter/jitter data: MCP sends pt.y as category string.
+  // Handler expects pt.category. Also auto-build categories + catOrder from data.
+  if ((t === 'scatter' || t === 'jitter') && params.data) {
+    var scatCats = {};
+    var scatOrder = [];
+    for (var di = 0; di < params.data.length; di++) {
+      var dp = params.data[di];
+      // Map y → category
+      if (dp.y !== undefined && dp.category === undefined) dp.category = dp.y;
+      var cat = dp.category || 'default';
+      if (!scatCats[cat]) {
+        scatCats[cat] = dp.color || '#888888';
+        scatOrder.push(cat);
+      }
+    }
+    if (!params.categories || Object.keys(params.categories).length === 0) params.categories = scatCats;
+    if (!params.categoryOrder || params.categoryOrder.length === 0) params.categoryOrder = scatOrder;
+  }
+
   var result;
   if (t === 'scatter' || t === 'jitter')    result = await handleScatterChart(params);
   else if (t === 'line'    || t === 'area') result = await handleLineChart(params);
@@ -3092,8 +3416,94 @@ async function handleCreateChart(params) {
   else if (t === 'radar')                        result = await handleRadarChart(params);
   else throw new Error('Unknown chartType "' + t + '". Supported: scatter, jitter, line, area, donut, pie, bar, histogram, radar');
 
+  // ── Card wrapper: if cardTitle is provided, wrap the chart in a styled card ──
+  // This gives every chart a consistent card appearance: bg + border + padding + title + subtitle + chart.
+  if (params.cardTitle && result && result.nodeId) {
+    var chartNode = figma.getNodeById(result.nodeId);
+    if (chartNode) {
+      var cardParent = chartNode.parent;
+      var chartIndex = cardParent ? Array.from(cardParent.children).indexOf(chartNode) : -1;
+
+      var card = figma.createFrame();
+      card.name = params.cardTitle;
+      card.layoutMode = 'VERTICAL';
+      card.primaryAxisAlignItems = 'MIN';
+      card.counterAxisAlignItems = 'MIN';
+      card.itemSpacing = 16;
+      card.paddingTop = 20; card.paddingBottom = 20;
+      card.paddingLeft = 24; card.paddingRight = 24;
+      card.cornerRadius = 12;
+      card.fills = [];
+      card.strokes = [];
+      card.clipsContent = true;
+
+      // DS fills + stroke — card always uses bg-secondary for consistent appearance
+      try { await applyFill(card, 'Colors/Background/bg-secondary'); } catch(_) {
+        // Fallback: try the chart's bgVariable
+        if (chartDsContext && chartDsContext.bgVariable) {
+          try { await applyFill(card, chartDsContext.bgVariable); } catch(_2) {}
+        }
+      }
+      // Apply stroke via raw (applyFill only does fills)
+      card.strokes = chartNode.strokes && chartNode.strokes.length > 0 ? chartNode.strokes : [];
+      try {
+        var borderVar = await getVariableByPath('Colors/Border/border-secondary');
+        if (borderVar) {
+          var bp = figma.variables.setBoundVariableForPaint({ type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }, 'color', borderVar);
+          card.strokes = [bp];
+          card.strokeWeight = 1;
+        }
+      } catch(_) {}
+
+      // Insert card where chart was
+      if (cardParent && 'appendChild' in cardParent) {
+        cardParent.insertChild(chartIndex >= 0 ? chartIndex : cardParent.children.length, card);
+      }
+
+      // Title text
+      await figma.loadFontAsync({ family: sessionDefaults.fontFamily || 'Inter', style: 'Regular' });
+      var titleNode = figma.createText();
+      titleNode.fontName = { family: sessionDefaults.fontFamily || 'Inter', style: 'Regular' };
+      titleNode.fontSize = 14;
+      titleNode.characters = params.cardTitle;
+      card.appendChild(titleNode);
+      titleNode.layoutSizingHorizontal = 'FILL';
+      await applyChartTextDS(titleNode, { r: 0.9, g: 0.9, b: 0.92 });
+      // Try semibold text style
+      try { await applyTextStyle(titleNode, '623426917b737c9216de994453f53ddbfc1d7a22'); } catch(_) {}
+      try { await applyFill(titleNode, 'Colors/Text/text-primary (900)'); } catch(_) {}
+
+      // Subtitle text
+      if (params.cardSubtitle) {
+        var subNode = figma.createText();
+        subNode.fontName = { family: sessionDefaults.fontFamily || 'Inter', style: 'Regular' };
+        subNode.fontSize = 12;
+        subNode.characters = params.cardSubtitle;
+        card.appendChild(subNode);
+        subNode.layoutSizingHorizontal = 'FILL';
+        await applyChartTextDS(subNode, { r: 0.55, g: 0.56, b: 0.64 });
+        try { await applyTextStyle(subNode, 'b54a5986b3e02247814b3fab24b6aeb93c918080'); } catch(_) {}
+        try { await applyFill(subNode, 'Colors/Text/text-tertiary (600)'); } catch(_) {}
+      }
+
+      // Reparent chart into card — make chart transparent (card provides the bg)
+      card.appendChild(chartNode);
+      chartNode.fills = [];
+      chartNode.strokes = [];
+      chartNode.cornerRadius = 0;
+      chartNode.layoutSizingHorizontal = 'FILL';
+
+      // Card sizing
+      card.layoutSizingHorizontal = chartNode.layoutSizingHorizontal === 'FILL' ? 'FILL' : 'HUG';
+      card.layoutSizingVertical = 'HUG';
+
+      result = { nodeId: card.id, name: card.name, chartNodeId: chartNode.id };
+    }
+  }
+
   // Clean up chart DS context
   chartDsContext = null;
+  if (chartWarning && result) result.warning = chartWarning;
   return result;
 }
 
@@ -3152,6 +3562,7 @@ async function handleSetPrototypeStart(params) {
 // Call ONCE at the start of a build to avoid import queue congestion during rendering.
 // Processes in chunks of 10 to balance throughput with Figma API stability.
 async function handlePreloadStyles(params) {
+  dsDiscoveryPerformed = true;
   const keys = params.keys || [];
   const results = {};
   let loaded = 0;
@@ -3163,19 +3574,29 @@ async function handlePreloadStyles(params) {
     const chunkResults = await Promise.allSettled(
       chunk.map(async function(key) {
         if (styleCache.has(key)) { return { key, status: 'cached' }; }
-        try {
-          const imported = await Promise.race([
-            figma.importStyleByKeyAsync(key),
-            new Promise(function(_, reject) { setTimeout(function() { reject(new Error('timeout')); }, 30000); }),
-          ]);
-          if (imported && imported.id) {
-            styleCache.set(key, imported.id);
-            return { key, status: 'loaded' };
+        // Retry with backoff for cold-start: first import warms the library connection.
+        var maxRetries = 3;
+        var perAttemptTimeout = 15000;
+        for (var attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            var imported = await Promise.race([
+              figma.importStyleByKeyAsync(key),
+              new Promise(function(_, rej) { setTimeout(function() { rej(new Error('timeout')); }, perAttemptTimeout); }),
+            ]);
+            if (imported && imported.id) {
+              styleCache.set(key, imported.id);
+              return { key, status: 'loaded' };
+            }
+            return { key, status: 'not_found' };
+          } catch (e) {
+            if (attempt < maxRetries) {
+              await new Promise(function(r) { setTimeout(r, 1500); });
+              continue;
+            }
+            return { key, status: e.message || 'error' };
           }
-          return { key, status: 'not_found' };
-        } catch (e) {
-          return { key, status: e.message || 'error' };
         }
+        return { key, status: 'error' };
       })
     );
     for (const r of chunkResults) {
@@ -3197,6 +3618,7 @@ async function handlePreloadStyles(params) {
 // to warm the variable cache and avoid per-path timeouts during build.
 // params: { prefixes: ["Colors", "spacing", "radius"] }
 async function handlePreloadVariables(params) {
+  dsDiscoveryPerformed = true;
   const prefixes = params.prefixes || [];
   const keys = params.keys || [];
   const matchAll = prefixes.length === 0 && keys.length === 0;
@@ -3788,6 +4210,61 @@ function handleTagRawException(params) {
   return { ok: true, nodeId: node.id, name: node.name };
 }
 
+// Set the variable mode for a collection on a specific node (usually the artboard).
+// Without this, all DS variables resolve to the default (first) mode — typically "Light".
+// params: { nodeId, collectionName (optional match by name), modeIndex (0-based, default 1 for dark) }
+async function handleSetVariableMode(params) {
+  var node = figma.getNodeById(params.nodeId);
+  if (!node) throw new Error('Node ' + params.nodeId + ' not found');
+
+  // Get all available library variable collections
+  var collections = await figma.teamLibrary.getAvailableLibraryVariableCollectionsAsync();
+  var results = [];
+
+  for (var ci = 0; ci < collections.length; ci++) {
+    var col = collections[ci];
+    // Filter by name if provided
+    if (params.collectionName && !col.name.toLowerCase().includes(params.collectionName.toLowerCase())) continue;
+
+    // Import the collection to get the local version with modes
+    try {
+      var vars = await figma.teamLibrary.getVariablesInLibraryCollectionAsync(col.key);
+      if (vars.length === 0) continue;
+      // Import first variable to get the collection reference
+      var importedVar = await figma.variables.importVariableByKeyAsync(vars[0].key);
+      var localCollection = figma.variables.getVariableCollectionById(importedVar.variableCollectionId);
+      if (!localCollection) continue;
+
+      var modes = localCollection.modes;
+      var modeIndex = params.modeIndex !== undefined ? params.modeIndex : 1; // default to second mode (typically Dark)
+      if (modeIndex >= modes.length) {
+        results.push({ collection: col.name, status: 'skipped', reason: 'only ' + modes.length + ' mode(s) available', modes: modes.map(function(m) { return m.name; }) });
+        continue;
+      }
+
+      var targetMode = modes[modeIndex];
+      node.setExplicitVariableModeForCollection(localCollection, targetMode.modeId);
+      results.push({ collection: col.name, status: 'set', mode: targetMode.name, modeIndex: modeIndex });
+    } catch (e) {
+      results.push({ collection: col.name, status: 'error', error: e.message || String(e) });
+    }
+  }
+
+  return { ok: true, nodeId: node.id, results: results };
+}
+
+// Retroactively apply a DS text style to an existing text node.
+// Exposes the internal applyTextStyle() function as a handler.
+async function handleSetTextStyle(params) {
+  if (!params.nodeId) throw new Error('nodeId is required');
+  if (!params.textStyleId) throw new Error('textStyleId is required');
+  var node = figma.getNodeById(params.nodeId);
+  if (!node) throw new Error('Node ' + params.nodeId + ' not found');
+  if (node.type !== 'TEXT') throw new Error('Node ' + params.nodeId + ' is ' + node.type + ', not TEXT');
+  var applied = await applyTextStyle(node, params.textStyleId);
+  return { ok: applied, nodeId: node.id, textStyleId: params.textStyleId };
+}
+
 const HANDLERS = {
   preload_styles:     handlePreloadStyles,
   preload_variables:  handlePreloadVariables,
@@ -3798,6 +4275,7 @@ const HANDLERS = {
   create_text:        handleCreateText,
   create_rectangle:   handleCreateRectangle,
   create_ellipse:     handleCreateEllipse,
+  create_svg:         handleCreateSvg,
   set_component_text: handleSetComponentText,
   set_layout_sizing:  handleSetLayoutSizing,
   get_selection:      handleGetSelection,
@@ -3839,8 +4317,10 @@ const HANDLERS = {
   read_variable_values:   handleReadVariableValues,
   validate_ds_compliance: handleValidateDsCompliance,
   tag_raw_exception:      handleTagRawException,
+  set_variable_mode:      handleSetVariableMode,
   restyle_artboard:       handleRestyleArtboard,
   fix_text_colors:        handleFixTextColors,
+  set_text_style:         handleSetTextStyle,
 };
 
 figma.ui.onmessage = async msg => {

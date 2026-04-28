@@ -82,12 +82,14 @@ function nextId() {
 
 // Per-instruction timeout (ms). Component imports may take longer due to library fetching.
 const TIMEOUT_BY_TYPE = {
-  insert_component: 90_000,     // Plugin has internal 60s per attempt. Bridge must exceed plugin timeout.
+  insert_component: 100_000,    // Plugin: 45s × 2 attempts + 2s pause = 92s. Bridge adds 8s headroom.
   replace_component: 90_000,
   swap_main_component: 90_000,
   preload_styles: 300_000,      // Sequential import of N keys × 30s each. 300s covers ~10 keys on cold start.
   preload_variables: 300_000,   // Library collection walk + batch import. Can be slow with large DSs.
   restyle_artboard: 600_000,    // Walks entire node tree, loads fonts. Can take minutes on large artboards.
+  batch: 600_000,               // N sequential operations. DS variable resolution in strict mode adds ~10s/op. 600s covers ~50 operations.
+  create_chart: 300_000,        // Chart rendering builds many internal nodes. 300s covers complex charts.
 };
 const DEFAULT_TIMEOUT = 120_000;
 
@@ -156,6 +158,24 @@ const server = http.createServer(async (req, res) => {
       bridge: 'running',
       pluginConnected: !!(pluginSocket && pluginSocket.readyState === 1)
     });
+  }
+
+  // POST /file-name — lightweight file name lookup via REST API
+  if (req.method === 'POST' && req.url === '/file-name') {
+    if (!FIGMA_TOKEN) return json(res, 200, { ok: true, result: { name: null } });
+    try {
+      const body = await readBody(req);
+      const { fileKey } = body;
+      if (!fileKey) throw new Error('"fileKey" is required');
+      const r = await fetch(`https://api.figma.com/v1/files/${fileKey}?depth=1`, {
+        headers: { 'X-Figma-Token': FIGMA_TOKEN },
+      });
+      if (!r.ok) return json(res, 200, { ok: true, result: { name: null } });
+      const data = await r.json();
+      return json(res, 200, { ok: true, result: { name: data.name || null } });
+    } catch (e) {
+      return json(res, 200, { ok: true, result: { name: null } });
+    }
   }
 
   // POST /extract-ds — enriched DS extraction via REST API (parallel path, no plugin needed)

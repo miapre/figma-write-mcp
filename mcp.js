@@ -681,6 +681,37 @@ const TOOLS = [
   },
 
   {
+    name: 'figma_create_svg',
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    description:
+      'Import an SVG string into Figma. Returns a frame containing the SVG vectors. ' +
+      'Use for line chart paths, area fills, radar polygons, polar areas — any geometry that requires curves or arcs. ' +
+      'After import, DS color variables can be applied to all vector children via fillVariable/strokeVariable. ' +
+      'The wrapper frame has fills cleared by default (transparent).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        svg:             { type: 'string', description: 'SVG markup string (e.g., \'<svg>...</svg>\').' },
+        name:            { type: 'string', description: 'Name for the imported frame.' },
+        parentNodeId:    { type: 'string', description: 'Parent frame to insert into.' },
+        fillVariable:    { type: 'string', description: 'DS color variable to apply to ALL vector children fills.' },
+        fillHex:         { type: 'string', description: 'Hex color fallback for vector fills.' },
+        fillNone:        { type: 'boolean', description: 'Set false to keep the SVG wrapper frame\'s default fill. Default: true (transparent).' },
+        strokeVariable:  { type: 'string', description: 'DS color variable for vector strokes (clears fills, applies stroke).' },
+        strokeHex:       { type: 'string', description: 'Hex color fallback for strokes.' },
+        strokeWidth:     { type: 'number', description: 'Stroke width. Default: 2.' },
+        width:           { type: 'number', description: 'Resize frame to this width.' },
+        height:          { type: 'number', description: 'Resize frame to this height.' },
+        x:               { type: 'number', description: 'X position.' },
+        y:               { type: 'number', description: 'Y position.' },
+        layoutGrow:      { type: 'number', description: 'Layout grow factor.' },
+        layoutAlign:     { type: 'string', description: 'Layout alignment.' },
+      },
+      required: ['svg'],
+    },
+  },
+
+  {
     name: 'figma_set_component_text',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
     description:
@@ -738,6 +769,23 @@ const TOOLS = [
         value:  { type: 'string', description: 'New text content.' },
       },
       required: ['nodeId', 'value'],
+    },
+  },
+
+  {
+    name: 'figma_set_text_style',
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    description:
+      'Apply a DS text style to an existing TEXT node. ' +
+      'Use this to retroactively bind a text style after a node has already been created. ' +
+      'The textStyleId can be a full Figma style ID or a style key.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        nodeId:      { type: 'string', description: 'Node ID of the TEXT node.' },
+        textStyleId: { type: 'string', description: 'DS text style ID or key to apply.' },
+      },
+      required: ['nodeId', 'textStyleId'],
     },
   },
 
@@ -885,6 +933,8 @@ const TOOLS = [
         name:         { type: 'string' },
         width:        { type: 'number' },
         height:       { type: 'number' },
+        cardTitle:    { type: 'string', description: 'If provided, wraps the chart in a DS card with this title. Card has bg-secondary fill, border, 24px padding, and consistent layout.' },
+        cardSubtitle: { type: 'string', description: 'Subtitle shown below the card title. Only used when cardTitle is set.' },
         bars: {
           type: 'array',
           description: 'Bar chart data. Each item: { label: string, value: number, color?: string (DS hex) }.',
@@ -893,7 +943,8 @@ const TOOLS = [
             properties: {
               label: { type: 'string' },
               value: { type: 'number' },
-              color: { type: 'string', description: 'DS hex color for this bar segment.' },
+              color: { type: 'string', description: 'Hex color fallback for this bar.' },
+              colorVariable: { type: 'string', description: 'DS color variable path for this bar (e.g., "Component colors/Utility/Success/utility-success-500"). Preferred over hex color.' },
             },
             required: ['label', 'value'],
           },
@@ -1348,6 +1399,24 @@ const TOOLS = [
   },
 
   {
+    name: 'figma_set_variable_mode',
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    description:
+      'Set the variable mode for DS collections on a node (usually the artboard). ' +
+      'Without this, all DS variables resolve to the default mode (typically Light). ' +
+      'Call on the artboard after creation to switch to Dark mode or other modes. ' +
+      'Use modeIndex 0 for first mode (usually Light), 1 for second (usually Dark).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        nodeId: { type: 'string', description: 'Node ID (usually the artboard) to set the mode on.' },
+        collectionName: { type: 'string', description: 'Optional: filter by collection name (e.g., "Color modes"). Omit to set ALL collections.' },
+        modeIndex: { type: 'number', description: '0-based mode index. 0 = first mode (Light), 1 = second mode (Dark). Default: 1.' },
+      },
+      required: ['nodeId'],
+    },
+  },
+  {
     name: 'figma_validate_ds_compliance',
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     description:
@@ -1538,8 +1607,11 @@ const TOOLS = [
     description:
       'Extract and normalize a design system from a Figma library file. ' +
       'Call this on first run or when the DS has been updated. ' +
-      'Queries the Figma REST API for components, component sets, styles, and variables. ' +
-      'Normalizes the extraction into a structured knowledge artifact at internal/ds-knowledge/ds-knowledge-normalized.json. ' +
+      'IMPORTANT: The provided fileKey must correspond to a library that is enabled ' +
+      'in the active Figma file. The tool validates this by querying the plugin for ' +
+      'enabled libraries and cross-checking. If no libraries are enabled, or the ' +
+      'fileKey does not match an enabled library, the call is rejected. ' +
+      'The file tells Mimic what DS to use — never the other way around. ' +
       'Returns a summary of what was found (counts of components, styles, variables).',
     inputSchema: {
       type: 'object',
@@ -1651,9 +1723,11 @@ const DIRECT_PASS = new Set([
   'figma_create_text',
   'figma_create_rectangle',
   'figma_create_ellipse',
+  'figma_create_svg',
   'figma_set_component_text',
   'figma_set_layout_sizing',
   'figma_set_text',
+  'figma_set_text_style',
   'figma_set_node_fill',
   'figma_set_visibility',
   'figma_set_variant',
@@ -1682,6 +1756,7 @@ const DIRECT_PASS = new Set([
   'figma_read_variable_values',
   'figma_validate_ds_compliance',
   'figma_tag_raw_exception',
+  'figma_set_variable_mode',
 ]);
 
 // Strip "figma_" prefix to get the bridge instruction type.
@@ -2269,9 +2344,84 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
       });
 
     } else if (name === 'mimic_discover_ds') {
-      // First-run DS discovery: extract via bridge REST API, then normalize
+      // First-run DS discovery: extract via bridge REST API, then normalize.
+      //
+      // CRITICAL GATE: The DS must be enabled in the target file. The file tells
+      // Mimic what DS to use — never the other way around. Before extracting,
+      // query the plugin for enabled libraries and validate that the provided
+      // fileKey corresponds to one of them.
       const bridgeUrl = process.env.BRIDGE_URL || 'http://127.0.0.1:3055';
       const knowledgePath = resolve(__dir, 'internal/ds-knowledge/ds-knowledge-normalized.json');
+
+      // ── File-driven DS validation ──────────────────────────────────────────
+      // Step 1: Ask the plugin what libraries are enabled in the active file.
+      let enabledLibraries = [];
+      try {
+        const libResult = await callBridge('discover_library_variables', {});
+        if (libResult && libResult.collections) {
+          enabledLibraries = libResult.collections;
+        }
+      } catch (_) {
+        // Plugin may not be connected — skip validation if bridge is down,
+        // but still warn in the result.
+      }
+
+      // Step 2: If the plugin returned library data, validate the fileKey.
+      // We fetch the file name from the REST API and compare against enabled
+      // library names. If no match, the library is not connected to the file.
+      if (enabledLibraries.length === 0) {
+        // No libraries enabled in the target file. Stop.
+        throw new Error(
+          'No design system libraries are enabled in the active Figma file. ' +
+          'Mimic builds using your DS — without one, there is nothing to build with. ' +
+          'Enable a library in Assets → Team library, then try again.'
+        );
+      }
+
+      // Extract unique library names from enabled collections.
+      const enabledLibNames = [...new Set(
+        enabledLibraries.map(c => c.libraryName).filter(Boolean)
+      )];
+
+      // Fetch the file name for the provided fileKey via bridge (which has the token).
+      let dsFileName = null;
+      try {
+        const fnRes = await fetch(`${bridgeUrl}/file-name`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileKey: fixedArgs.fileKey }),
+        });
+        const fnData = await fnRes.json();
+        if (fnData.ok && fnData.result) dsFileName = fnData.result.name;
+      } catch (_) {}
+
+      // Validate: the provided fileKey must verifiably match an enabled library.
+      if (!dsFileName) {
+        // Could not resolve the file name — the fileKey is invalid, inaccessible,
+        // or the Figma token is missing. Reject: we cannot confirm this is a
+        // library that's enabled in the file.
+        throw new Error(
+          `Could not verify file key "${fixedArgs.fileKey}". ` +
+          'The file was not found, the key is invalid, or FIGMA_ACCESS_TOKEN is not set. ' +
+          `Enabled libraries in the active file: [${enabledLibNames.join(', ')}]. ` +
+          'Mimic only uses libraries that are connected to the target file.'
+        );
+      }
+
+      const nameMatch = enabledLibNames.some(
+        libName => dsFileName.toLowerCase().includes(libName.toLowerCase()) ||
+                   libName.toLowerCase().includes(dsFileName.toLowerCase())
+      );
+      if (!nameMatch) {
+        throw new Error(
+          `Library mismatch: the file "${dsFileName}" (key: ${fixedArgs.fileKey}) ` +
+          `does not match any enabled library in the active file. ` +
+          `Enabled libraries: [${enabledLibNames.join(', ')}]. ` +
+          'Mimic only uses libraries that are connected to the target file. ' +
+          'Either enable this library in Assets → Team library, or use a fileKey ' +
+          'that matches one of the enabled libraries.'
+        );
+      }
 
       // Load previous knowledge for change detection
       let previousCounts = null;
@@ -2308,6 +2458,8 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
 
       result = {
         fileKey: fixedArgs.fileKey,
+        dsFileName: dsFileName || null,
+        enabledLibraries: enabledLibNames,
         firstRun: !previousCounts,
         counts: extractData.result.counts,
         normalizedPath: knowledgePath,

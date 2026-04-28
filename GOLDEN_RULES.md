@@ -175,6 +175,8 @@ Component types to search for: buttons, tabs, badges, table cells, pagination, d
 
 Skipping discovery is a critical violation. Building a primitive when a DS component exists is a Rule 2 violation.
 
+**Tool-level enforcement:** The plugin tracks whether DS discovery has been performed in the current session. When `dsMode` is `strict` and no discovery has happened (no `preload_styles`, `preload_variables`, `discover_library_styles`, `discover_library_variables`, or `insert_component` call), creating a new artboard (page-level `create_frame`) returns a `DS_DISCOVERY_REQUIRED` warning. This makes it impossible to silently skip Phase 1. The warning appears in the build output and the orchestrator must acknowledge it before proceeding. `set_session_defaults` resets the flag — each new build session requires fresh discovery.
+
 **Rule 2 always takes precedence over Rule 22 (efficiency).** If the DS has table cells, use them — even if it means more tool calls. Efficiency is never an acceptable reason to skip a DS component. The only valid reason to use a primitive is "the DS does not have a matching component."
 
 ## 24. Build report & user communication
@@ -205,19 +207,48 @@ If post-QA fixes were applied, state them transparently. A build without a repor
 
 When the HTML contains charts (bar, line, scatter, donut, radar, etc.), Mimic must build them in Figma — not placeholders.
 
-**Auto-layout applies to charts too.** Charts must be resizable — when the user changes the artboard width, charts should adapt. This means:
+**Native chart building is the default.** Charts are built using the same primitives as any other section: `create_frame`, `create_text`, `create_rectangle`, `create_ellipse`, and `create_svg`. This ensures 100% DS compliance — every label uses a DS text style, every fill uses a DS color variable, every spacing value uses a DS spacing variable. The `figma_create_chart` convenience tool exists for rapid prototyping but produces partial DS compliance — it must NOT be used in production builds.
+
+**Three primitives for chart geometry:**
+
+| Primitive | Use for | DS compliance |
+|---|---|---|
+| `create_frame` + `create_rectangle` | Bar charts, heatmap cells, progress bars, grid lines | Full — bind DS variables directly |
+| `create_ellipse` with `arcData` | Donut/pie segments, scatter dots, bubble markers | Full — `fillVariable` binds DS color |
+| `create_svg` (SVG string import) | Line paths, area fills, radar polygons, polar areas, curves | Partial — apply DS variables to children post-import |
+
+**Per chart type — native build approach:**
+
+- **Bar chart (vertical/horizontal/stacked):** HORIZONTAL auto-layout frame with column frames per bar. Each column: VERTICAL, `primaryAxisAlignItems: MAX` (bottom-align). Bar = frame with FIXED height (scaled to data), DS fill variable. Label = `create_text` with DS text style. Bars use `layoutGrow: 1` to distribute evenly.
+- **Line / area chart:** Structure frames for Y-axis labels, plot area, X-axis labels. Line geometry via `create_svg` with an SVG `<path>` using cubic bezier commands. Area = same path but closed and filled. Apply DS `strokeVariable` to the line vectors post-import.
+- **Donut / pie chart:** `create_ellipse` per segment with `arcData: { startingAngle, endingAngle, innerRadius }`. Angles in radians, calculated from cumulative data percentages. Each segment gets `fillVariable` for DS color. Legend items = frame rows with color dot + label text.
+- **Radar / spider chart:** Calculate vertex positions using trigonometry: `x = cx + r * cos(angle)`, `y = cy + r * sin(angle)`. Generate SVG polygon path. Import via `create_svg`. Axis labels via `create_text` positioned around the polygon.
+- **Scatter / bubble chart:** `create_ellipse` per data point positioned via `x`/`y` in a `layoutMode: 'NONE'` container. Each gets `fillVariable`. Size = data dimension for bubbles.
+- **Heatmap:** Grid of `create_frame` cells in auto-layout rows. Each cell gets `fillVariable` mapped from intensity to a DS color scale (e.g., brand-50 through brand-600).
+- **Progress bar:** HORIZONTAL frame: label (text) + bar bg (frame, `layoutGrow: 1`, DS border color) containing fill (frame, FIXED width proportional to %). Value label (text) at end.
+- **Polar area:** Like donut but each segment has a different radius. `create_svg` with arc paths calculated from data.
+
+**Chart grid line widths:**
+- Horizontal reference lines: `stroke-width="1"` (1px)
+- Vertical separator lines: `stroke-width="1.5"` (1.5px)
+- Grid SVG uses `strokeVariable` for DS color binding. The `create_svg` handler preserves individual stroke widths from the SVG markup.
+
+**Area fill opacity:** Area fills must be created as a SEPARATE SVG from the line path. Do NOT apply `fillVariable` to the area SVG — it overrides the SVG's `fill-opacity`. The raw SVG `fill-opacity` is the correct mechanism for semi-transparent area backgrounds. The line + dots SVG can use `strokeVariable` for DS binding.
+
+**Auto-layout applies to charts too.** Charts must be resizable:
 - **Chart containers** (cards, wrappers): auto-layout, FILL horizontal, HUG vertical — same as any other frame.
-- **Bar charts**: HORIZONTAL auto-layout frame with bars using `layoutGrow: 1` to distribute evenly. Bars have FIXED height (the data value) but flexible width.
-- **Label rows**: HORIZONTAL, SPACE_BETWEEN — labels distribute with the bars.
-- **Legends**: VERTICAL auto-layout stack. Each legend item is HORIZONTAL (dot + text).
-- **Donut/pie/scatter geometry** (arcs, dots, paths): these are the ONLY elements that may use absolute positioning (`layoutMode = 'NONE'`). Trigonometric and coordinate math requires it. But they must be inside an auto-layout parent that positions the geometry frame relative to labels and legends.
+- **Bar columns**: `layoutGrow: 1` to distribute evenly in horizontal parent.
+- **Label rows**: HORIZONTAL, SPACE_BETWEEN — labels distribute with the data.
+- **Legends**: HORIZONTAL or VERTICAL auto-layout stack. Each legend item is HORIZONTAL (dot + text).
+- **Donut/scatter geometry** (arcs, dots, paths): these are the ONLY elements that may use absolute positioning (`layoutMode = 'NONE'`). But they must be inside an auto-layout parent that positions the geometry frame relative to labels and legends.
 
 **DS compliance is mandatory — no exceptions:**
-- Use DS color variables for all fills and strokes
-- Use DS text styles for labels and values
-- Use DS spacing variables for padding, gaps, and margins in chart structure
-- Use `createNodeFromSvg()` for complex geometric shapes (polygons, paths) — it produces higher quality output than manual vector paths with resize()
+- Every text node (labels, values, legends, axis ticks) must have a DS `textStyleId`
+- Every fill (bars, segments, dots, grid lines) must use a DS color variable via `fillVariable`
+- Every stroke (lines, borders) must use a DS color variable via `strokeVariable`
+- All spacing (padding, gaps) must use DS spacing variables
 - After SVG import, traverse child nodes and bind DS color variables
+- The chart card wrapper uses `create_frame` with DS padding, gap, radius, and border — same as any card
 
 A placeholder shape labeled "Radar Chart" is not acceptable output.
 
@@ -429,7 +460,7 @@ Mimic will ONLY use components or styles/variables from the design system to cre
 
 **Post-build:** Call `validate_ds_compliance` on the artboard after every build. Any violation found is a build defect.
 
-**Exception: chart data geometry only.** Donut arcs, scatter dots, and line paths require trigonometric/coordinate math — these may use absolute positioning and raw pixel values. Everything else in a chart (containers, bar rows, labels, legends) must use auto-layout and DS variables like any other element. See Rule 25 for the full chart auto-layout protocol.
+**Exception: SVG-imported geometry only.** Line paths, area fills, radar polygons, and polar arcs imported via `create_svg` may contain raw color values in the SVG markup. After import, the orchestrator must apply DS color variables to child vector nodes via `fillVariable`/`strokeVariable`. If DS binding succeeds, the violation is resolved. If it fails (e.g., SVG structure prevents binding), document it in the build report. All other chart elements (containers, bars, labels, legends, ellipse segments, heatmap cells) must use DS variables directly — no exceptions. See Rule 25 for the full native chart building protocol.
 
 This rule overrides all other rules. If any rule conflicts with this one, this one wins.
 

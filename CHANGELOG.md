@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.5.0 (2026-04-28)
+
+### Fixed
+- **Critical: component import timeout cascade** -- `ATTEMPT_TIMEOUT` increased from 20s to 45s. Complex component sets (inputs, dropdowns, toggles) need 25-40s for cold-start download via `importComponentByKeyAsync`. The 20s timeout caused consistent failures, and 3 retries per component (15 failed API calls total) destabilized the plugin WebSocket, killing builds mid-way. Reduced `MAX_RETRIES` from 3 to 2 to limit cascade damage.
+- **Failed component key caching** -- New `failedComponentKeys` session cache. When a component key fails to import, all subsequent calls for the same key return instantly instead of waiting another 90s. Prevents the import cascade that destabilizes the plugin. Cache cleared on `set_session_defaults` (new build session).
+- **Bridge timeout alignment** -- `insert_component` bridge timeout updated from 90s to 100s to match the new plugin timing (45s x 2 + 2s pause = 92s).
+
+### Added
+- **`figma_create_svg` tool** -- Import SVG strings into Figma as vector frames. Supports DS color variable binding on child vectors via `fillVariable`/`strokeVariable`. Used for line charts, radar polygons, area fills, and other geometric shapes that require path data.
+- **`figma_set_text_style` tool** -- Apply a DS text style to an existing text node by ID. Used for post-creation style application on text nodes inside charts or SVG-adjacent labels.
+- **`figma_set_variable_mode` handler** -- Set explicit variable mode on a frame (e.g., dark mode). Calls `setExplicitVariableModeForCollection` on the target node.
+- **Phase 1 enforcement gate** -- Plugin tracks `dsDiscoveryPerformed` flag. In strict mode, creating artboards without prior DS discovery returns `DS_DISCOVERY_REQUIRED` warning. Prevents builds that skip Phase 1 from producing primitive-only output.
+- **Native chart building protocol** -- Charts built with `create_frame`, `create_text`, `create_rectangle`, `create_ellipse`, and `create_svg` instead of `figma_create_chart`. Achieves 100% DS compliance (0 violations vs 125 with the convenience tool). Documented per-chart-type patterns in CLAUDE.md and GOLDEN_RULES.md.
+- **Batch operation timeout** -- Bridge batch timeout set to 600s to cover large sequential operations in strict DS mode.
+
 ## 1.4.0 (2026-04-24)
 
 ### Fixed

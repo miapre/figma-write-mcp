@@ -273,6 +273,36 @@ Read the HTML's CSS before building. These properties map directly — don't gue
 - **Multi-item components:** When using tabs, nav items, or other multi-item components with more items than needed, hide extras with `visible=false`. Don't leave default items showing.
 - **Page header completeness:** Set ALL boolean properties to `false` for features not shown in the HTML (Back btn, Icon, Badges, Description, Actions, etc.).
 
+### Charts — Native Build Protocol (Rule 25)
+
+Charts are built using the same primitives as any other section. **Never use `figma_create_chart` for production builds** — it produces partial DS compliance. Use these tools instead:
+
+| Tool | Chart use |
+|---|---|
+| `create_frame` | Card wrapper, bar containers, grid structure, heatmap rows, legend |
+| `create_text` | Axis labels, tick values, legend text, titles — always with DS `textStyleId` |
+| `create_rectangle` | Grid lines, heatmap cells |
+| `create_ellipse` + `arcData` | Donut segments, pie slices, scatter dots |
+| `create_svg` | Line paths, area fills, radar polygons, polar arcs |
+
+**Chart card wrapper:** Built with `create_frame` — same DS padding, gap, radius, border, and fill variables as any card. Title and subtitle use DS text styles. This replaces the `figma_create_chart` card wrapper which used raw spacing.
+
+**Bar chart math:** Scale data to pixel height: `barHeight = (value / maxValue) * chartAreaHeight`. Each bar column uses `primaryAxisAlignItems: MAX` to bottom-align.
+
+**Donut math:** Cumulative angles: `startAngle = sum of previous segments * 2π / total`. `endAngle = startAngle + (segmentValue / total) * 2π`. `innerRadius` as 0-1 ratio (e.g., 0.65 for standard donut).
+
+**Line chart SVG:** Generate `<svg><path d="M x1,y1 C cx1,cy1 cx2,cy2 x2,y2 ..."/></svg>`. Cubic beziers for smooth curves. Apply `strokeVariable` post-import to bind DS color.
+
+**Radar polygon SVG:** Vertices: `x = cx + (value/maxValue) * r * cos(angle - π/2)`, `y = cy + (value/maxValue) * r * sin(angle - π/2)`. Generate `<polygon>` SVG. Axis labels positioned with the same trig.
+
+**Radar chart (full):** Hexagonal grid SVG (3 rings at r=33%, 67%, 100% + 6 axis lines) + data polygon SVGs (vertex positions calculated via trig: `x = cx + value/max * r * cos(angle - π/2)`, `y = cy + value/max * r * sin(angle - π/2)`) + native text labels positioned at each vertex outside the polygon.
+
+**Polar area chart:** Like pie but each segment has equal angle (360/N) and different radius (proportional to value). Use `create_ellipse` with `arcData`, `innerRadius=0`, different ellipse sizes centered in the container.
+
+**Heatmap (SVG approach):** SVG per row (12 colored rects with `fill-opacity` for intensity). Day labels as native text. More efficient than 84 individual frame calls.
+
+**Area chart fill:** Create area fill as a SEPARATE SVG without `fillVariable` — keep raw SVG `fill-opacity` for transparency. Line + dots in a second SVG or native elements.
+
 ### Phase 4–5 (Post-build)
 - Take a screenshot and compare with the HTML. Verify content fidelity.
 - Generate the build report (Rule 24). Save to `mimic/reports/`.
@@ -331,6 +361,9 @@ module for the canonical path, not an alternative to it.
 
 ### Plugin Capabilities
 - `create_frame`, `create_text`, `create_rectangle` — with DS style params
+- `create_ellipse` — with `arcData` for donut segments, pie slices, scatter dots (DS fill/stroke)
+- `create_svg` — import SVG string, returns frame with vector children (apply DS colors post-import)
+- `create_chart` — convenience chart tool (rapid prototyping only, NOT for production builds — partial DS compliance)
 - `insert_component` — import from DS library by key
 - `set_variant` — batch mode for VARIANT + BOOLEAN properties
 - `set_component_text` — set text on component instances
