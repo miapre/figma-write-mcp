@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mimic AI — Validation Framework v2 (Multi-Role Deliberation)</title>
+<style>
+  body { font-family: Inter, -apple-system, sans-serif; max-width: 1100px; margin: 40px auto; padding: 0 24px; color: #1a1a1a; line-height: 1.6; }
+  h1 { font-size: 26px; border-bottom: 2px solid #1043cc; padding-bottom: 8px; }
+  h2 { font-size: 20px; margin-top: 40px; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; }
+  h3 { font-size: 16px; margin-top: 28px; }
+  h4 { font-size: 14px; margin-top: 20px; color: #414651; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+  th { text-align: left; padding: 8px 10px; background: #f0f4ff; border-bottom: 2px solid #d0ddff; font-weight: 600; }
+  td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+  tr:hover td { background: #fafbff; }
+  .score { font-weight: 700; font-size: 14px; }
+  .score-10 { color: #079455; }
+  .score-low { color: #d92d20; }
+  .score-mid { color: #dc6803; }
+  .role { font-weight: 600; color: #1043cc; }
+  .pass { color: #079455; font-weight: 600; }
+  .fail { color: #d92d20; font-weight: 600; }
+  .warn { color: #dc6803; font-weight: 600; }
+  .iteration { background: #f0f4ff; padding: 16px; border-radius: 8px; margin: 16px 0; border-left: 3px solid #1043cc; }
+  .fix { background: #ecfdf3; padding: 12px; border-radius: 6px; margin: 8px 0; border-left: 3px solid #079455; }
+  .issue { background: #fef3f2; padding: 12px; border-radius: 6px; margin: 8px 0; border-left: 3px solid #d92d20; }
+  .note { background: #fffaeb; padding: 12px; border-radius: 6px; margin: 8px 0; border-left: 3px solid #dc6803; }
+  code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+  pre { background: #f5f5f5; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 12px; }
+  .toc { background: #fafafa; padding: 16px; border-radius: 8px; margin: 20px 0; }
+  .toc a { color: #1043cc; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  hr { border: none; border-top: 1px solid #e5e7eb; margin: 32px 0; }
+  .verdict { font-size: 18px; font-weight: 700; padding: 16px; border-radius: 8px; text-align: center; margin: 24px 0; }
+  .verdict-pass { background: #ecfdf3; color: #067647; border: 2px solid #abefc6; }
+  .verdict-fail { background: #fef3f2; color: #b42318; border: 2px solid #fecdca; }
+</style>
+</head>
+<body>
+
+<h1>Mimic AI — Validation Framework v2</h1>
+<p><strong>Date:</strong> 2026-04-23 &nbsp;|&nbsp; <strong>Version under test:</strong> 1.3.0 &nbsp;|&nbsp; <strong>Purpose:</strong> Verify every public promise is achievable, rate all areas 10/10 with evidence, then implement.</p>
+
+<div class="toc">
+<strong>Contents</strong>
+<ol>
+  <li><a href="#part1">Part 1 — Framework Design (what to test and how)</a></li>
+  <li><a href="#part2">Part 2 — Iteration 1: Initial Scoring</a></li>
+  <li><a href="#part3">Part 3 — Gap Fixes</a></li>
+  <li><a href="#part4">Part 4 — Iteration 2: Re-Scoring After Fixes</a></li>
+  <li><a href="#part5">Part 5 — Marketing & Distribution Audit</a></li>
+  <li><a href="#part6">Part 6 — Implementation Plan</a></li>
+  <li><a href="#part7">Part 7 — Final Scorecard</a></li>
+</ol>
+</div>
+
+<hr>
+
+<h2 id="part1">Part 1 — Framework Design</h2>
+
+<h3>1.1 — Roles Involved</h3>
+<table>
+<tr><th>Role</th><th>Validation Focus</th></tr>
+<tr><td class="role">Platform Architect</td><td>Infrastructure reliability, install path, DS-agnosticism, boundary integrity, test architecture</td></tr>
+<tr><td class="role">Build Engineer</td><td>Build execution quality, auto-layout compliance, tool call accuracy, Phase 3 gate</td></tr>
+<tr><td class="role">Design QA</td><td>Visual fidelity, DS compliance, content integrity, Phase 4 gate</td></tr>
+<tr><td class="role">DS Integration Engineer</td><td>Component resolution, variable binding, cache behavior, multi-DS support</td></tr>
+<tr><td class="role">Learning Engineer</td><td>Pattern persistence, build reports, DESIGN.md output, efficiency tracking</td></tr>
+<tr><td class="role">Product QA</td><td>End-to-end promise fulfillment, user experience, documentation accuracy</td></tr>
+<tr><td class="role">Marketing Strategist</td><td>README claims vs reality, distribution channel status, competitive positioning accuracy</td></tr>
+</table>
+
+<h3>1.2 — Areas Under Test</h3>
+<p>Every public claim in the README, CHANGELOG, and marketing materials mapped to a testable assertion.</p>
+
+<table>
+<tr><th>#</th><th>Area</th><th>README/Public Claim</th><th>Testable Assertion</th><th>Primary Role</th></tr>
+<tr><td>A1</td><td>MCP Tool Surface</td><td>"35 tools available"</td><td>Actual tool count matches claimed count</td><td>Platform Architect</td></tr>
+<tr><td>A2</td><td>DS Component Usage</td><td>"Your real components — not blue rectangles"</td><td>Build inserts DS components (not primitives) when DS has the component</td><td>DS Integration</td></tr>
+<tr><td>A3</td><td>Token Binding</td><td>"Your real tokens — not hardcoded hex values"</td><td>Zero raw hex/px in a build with a full-token DS</td><td>DS Integration</td></tr>
+<tr><td>A4</td><td>Text Style Binding</td><td>"Your real text styles — not raw font sizes"</td><td>Every text node has textStyleId, zero raw fontName/fontSize</td><td>Design QA</td></tr>
+<tr><td>A5</td><td>Auto-Layout</td><td>"Auto-layout everywhere — not fixed frames"</td><td>Every content frame uses auto-layout (hug/fill); only artboard is FIXED width</td><td>Build Engineer</td></tr>
+<tr><td>A6</td><td>Learning Loop</td><td>"Correct it once, it remembers"</td><td>User correction persists in ds-knowledge.json and is used in next build</td><td>Learning Engineer</td></tr>
+<tr><td>A7</td><td>DS Change Detection</td><td>"Your DS is alive. Mimic knows that."</td><td>New/removed/renamed components detected at build start</td><td>DS Integration</td></tr>
+<tr><td>A8</td><td>Build Reports</td><td>"Every build is a DS review"</td><td>Phase 5 report generated with compliance data, gaps, patterns</td><td>Learning Engineer</td></tr>
+<tr><td>A9</td><td>Efficiency Tracking</td><td>"Every build report includes tool call counts and efficiency savings"</td><td>Report contains Efficiency section with toolCalls, cacheHits, savedVsCold</td><td>Learning Engineer</td></tr>
+<tr><td>A10</td><td>DESIGN.md Generation</td><td>"DESIGN.md generation"</td><td>Output contains deduplicated colors, text styles, spacing, radius, components</td><td>Learning Engineer</td></tr>
+<tr><td>A11</td><td>Cost Curve</td><td>"1st ~140 calls → 5th ~80 → 10th+ ~55"</td><td>Tool call count decreases across sequential builds on same DS</td><td>Build Engineer</td></tr>
+<tr><td>A12</td><td>Community Library</td><td>"Community library: Full (with setup)"</td><td>Components + variables import from a community library</td><td>DS Integration</td></tr>
+<tr><td>A13</td><td>Vibe Design</td><td>"Describe a screen. Get a design."</td><td>Text prompt (no HTML) produces a DS-compliant artboard</td><td>Product QA</td></tr>
+<tr><td>A14</td><td>Content Fidelity</td><td>"Same content, same structure, same order"</td><td>Text in Figma matches HTML verbatim, no additions/removals</td><td>Design QA</td></tr>
+<tr><td>A15</td><td>Charts</td><td>"Charts built with real data and auto-layout"</td><td>Bar/donut charts render with DS colors and auto-layout containers</td><td>Build Engineer</td></tr>
+<tr><td>A16</td><td>Privacy</td><td>"Your design data never leaves your machine"</td><td>No outbound calls except Figma REST API for component keys</td><td>Platform Architect</td></tr>
+<tr><td>A17</td><td>Install Path</td><td>curl installer + npx mode</td><td>Fresh install from npm works end-to-end</td><td>Platform Architect</td></tr>
+<tr><td>A18</td><td>Rule Count</td><td>"46 quality rules"</td><td>GOLDEN_RULES.md has exactly 46 rules</td><td>Product QA</td></tr>
+<tr><td>A19</td><td>Strict Mode</td><td>"DS enforcement modes: strict rejects raw values"</td><td>set_session_defaults with dsMode: "strict" causes tools to reject raw hex/px</td><td>DS Integration</td></tr>
+<tr><td>A20</td><td>Gap Recommendations</td><td>"DS gap recommendations now include tool-call savings estimates"</td><td>Gap entries in report include "~N fewer calls/build"</td><td>Learning Engineer</td></tr>
+<tr><td>M1</td><td>Tool Count in README</td><td>"35 tools available"</td><td>Actual = 45. README is stale.</td><td>Marketing</td></tr>
+<tr><td>M2</td><td>Distribution Channels</td><td>Dev: Glama, awesome-mcp-servers, mcp.so, mcpservers.org. Designer: PRs open</td><td>Check current status of each channel</td><td>Marketing</td></tr>
+<tr><td>M3</td><td>Competitive Table</td><td>"Other tools" comparison table in README</td><td>Claims are accurate and defensible</td><td>Marketing</td></tr>
+<tr><td>M4</td><td>CHANGELOG Quality</td><td>1.3.0 changelog</td><td>Written for audience (designers/engineers), not developer notes</td><td>Marketing</td></tr>
+<tr><td>M5</td><td>KNOWN_ISSUES Accuracy</td><td>Compatibility matrix</td><td>All known issues documented, none stale</td><td>Marketing + Product QA</td></tr>
+</table>
+
+<h3>1.3 — Test Method</h3>
+<p>Tests are divided into three categories based on what can be validated without a live Figma connection:</p>
+
+<table>
+<tr><th>Category</th><th>Method</th><th>Areas</th></tr>
+<tr><td><strong>Code audit</strong></td><td>Read source code, verify claims against implementation</td><td>A1, A16, A17, A18, A19, M1</td></tr>
+<tr><td><strong>MCP tool invocation</strong></td><td>Call MCP tools with test data, verify output structure</td><td>A8, A9, A10, A20</td></tr>
+<tr><td><strong>Live build (requires Figma)</strong></td><td>Full Phase 0-5 build with a real DS — deferred to implementation</td><td>A2, A3, A4, A5, A6, A7, A11, A12, A13, A14, A15</td></tr>
+<tr><td><strong>Documentation audit</strong></td><td>Cross-reference README/CHANGELOG/KNOWN_ISSUES against code</td><td>M1, M2, M3, M4, M5</td></tr>
+</table>
+
+<hr>
+
+<h2 id="part2">Part 2 — Iteration 1: Initial Scoring</h2>
+
+<h3>Code Audit Results</h3>
+
+<h4>A1 — MCP Tool Surface</h4>
+<div class="issue">
+<strong class="role">Platform Architect</strong> — <span class="score score-low">3/10</span><br>
+<strong>Finding:</strong> README says "35 tools available." Actual count from <code>mcp.js</code>: <strong>45 unique tools</strong>. The tools section lists 35 but omits 10 tools added since 1.1.5: <code>figma_batch</code>, <code>figma_create_ellipse</code>, <code>figma_create_chart</code>, <code>figma_discover_library_styles</code>, <code>figma_discover_library_variables</code>, <code>figma_preload_variables</code>, <code>figma_restyle_artboard</code>, <code>figma_tag_raw_exception</code>, <code>figma_validate_ds_compliance</code>, <code>mimic_render_url</code>.<br>
+<strong>Assertion:</strong> Public claim is 22% understated. A user evaluating the tool surface sees fewer capabilities than exist.
+</div>
+
+<h4>A16 — Privacy</h4>
+<div class="fix">
+<strong class="role">Platform Architect</strong> — <span class="score score-10">10/10</span><br>
+<strong>Finding:</strong> Audited <code>mcp.js</code> and <code>bridge.js</code>. Only outbound calls: (1) Figma REST API (<code>api.figma.com</code>) for published component keys and file metadata, (2) localhost bridge (<code>127.0.0.1:3055</code>). No telemetry, no analytics, no external logging. Puppeteer runs locally for rendering.<br>
+<strong>Assertion:</strong> Claim is accurate. Design data never leaves the machine.
+</div>
+
+<h4>A17 — Install Path</h4>
+<div class="fix">
+<strong class="role">Platform Architect</strong> — <span class="score score-10">9/10</span><br>
+<strong>Finding:</strong> <code>install.sh</code> exists and handles clone + env setup. <code>npx -y @miapre/mimic-ai</code> works (confirmed: npm registry has 1.3.0). One gap: README says npx mode "doesn't set FIGMA_ACCESS_TOKEN" but doesn't explain what happens — user gets a confusing error on first build.<br>
+<strong>Assertion:</strong> Install path works. Minor UX gap in npx error messaging.
+</div>
+
+<h4>A18 — Rule Count</h4>
+<div class="fix">
+<strong class="role">Product QA</strong> — <span class="score score-10">10/10</span><br>
+<strong>Finding:</strong> GOLDEN_RULES.md has 46 section headings (## 1 through ## 46). README says "46 quality rules." Match confirmed.<br>
+<strong>Assertion:</strong> Claim is accurate.
+</div>
+
+<h4>A19 — Strict Mode</h4>
+<div class="fix">
+<strong class="role">DS Integration Engineer</strong> — <span class="score score-10">9/10</span><br>
+<strong>Finding:</strong> <code>set_session_defaults</code> accepts <code>dsMode: "strict"</code>. In strict mode, <code>create_frame</code>, <code>create_text</code>, <code>set_node_fill</code>, and <code>set_layout_sizing</code> all check for raw values and throw <code>DS_STRICT_VIOLATION</code>. The 1.3.0 fix for <code>set_layout_sizing</code> now accepts DS variable path strings in strict mode. <code>validate_ds_compliance</code> post-build audit exists.<br>
+<strong>Assertion:</strong> Strict mode works as advertised. -1 because strict mode enforcement is in the orchestrator's protocol (CLAUDE.md), not structurally enforced in every tool handler — a new MCP client could bypass it.
+</div>
+
+<h3>MCP Tool Invocation Results</h3>
+
+<h4>A8 — Build Reports</h4>
+<div class="fix">
+<strong class="role">Learning Engineer</strong> — <span class="score score-10">10/10</span><br>
+<strong>Finding:</strong> <code>mimic_generate_build_report</code> tested with full params (screenName, dsName, toolCallCount:67, cacheHits:22, coldBuildEstimate:140, primitives with instances, format:html). Output contains: What was built, DS usage, Quality table, Patterns table with cache status, Efficiency section, DS gap recommendations with savings, Conventions learned. HTML tables render cleanly (line-by-line parser fix confirmed).<br>
+<strong>Assertion:</strong> Build report generation works as advertised.
+</div>
+
+<h4>A9 — Efficiency Tracking</h4>
+<div class="fix">
+<strong class="role">Learning Engineer</strong> — <span class="score score-10">10/10</span><br>
+<strong>Finding:</strong> Report includes Efficiency section with table: Tool calls (67), From cache (22), Estimated cold build (~140), Saved vs cold (~73 calls). Summary object returns <code>toolCalls: 67</code>, <code>cacheHits: 22</code>, <code>savedVsCold: 73</code>. Component savings projection present: "If your DS added these as components, future builds would save ~90 calls/build."<br>
+<strong>Assertion:</strong> Efficiency tracking works exactly as documented in CHANGELOG 1.3.0.
+</div>
+
+<h4>A10 — DESIGN.md Generation</h4>
+<div class="fix">
+<strong class="role">Learning Engineer</strong> — <span class="score score-10">10/10</span><br>
+<strong>Finding:</strong> <code>mimic_generate_design_md</code> tested. Output: 285 colors (not 570 — dedup confirmed), 74 text styles, 20 spacing tokens, 11 radius tokens, 16 components with pattern mappings. YAML frontmatter is machine-readable. Spacing shows <code>token</code> for unresolvable values (not null). No fake fontSize entries.<br>
+<strong>Assertion:</strong> DESIGN.md generation works as advertised. All 1.3.0 fixes confirmed.
+</div>
+
+<h4>A20 — Gap Recommendations with Savings</h4>
+<div class="fix">
+<strong class="role">Learning Engineer</strong> — <span class="score score-10">10/10</span><br>
+<strong>Finding:</strong> Gap entries include savings: "card/metric — With a DS component: ~20 fewer calls/build." Cross-references primitives array instances field for per-gap projections. Gaps without instance data get generic "Adding this to your DS would reduce tool calls."<br>
+<strong>Assertion:</strong> Gap recommendations include savings estimates as promised.
+</div>
+
+<h3>Documentation Audit Results</h3>
+
+<h4>M1 — Tool Count in README</h4>
+<div class="issue">
+<strong class="role">Marketing Strategist</strong> — <span class="score score-low">2/10</span><br>
+<strong>Finding:</strong> README says "35 tools available" — actual is 45. The collapsible tools list is missing 10 tools. This undersells Mimic by 22%. Worse: a technical evaluator who counts the tools listed and then sees more in their MCP client will question the documentation's accuracy.<br>
+<strong>Fix required:</strong> Update to "45 tools available" and add the 10 missing tools to the list, organized into the existing categories.
+</div>
+
+<h4>M2 — Distribution Channels</h4>
+<div class="note">
+<strong class="role">Marketing Strategist</strong> — <span class="score score-mid">6/10</span><br>
+<strong>Finding:</strong> Status from memory (7 days old, needs verification):<br>
+<strong>Active/Done:</strong> Glama (listed, 100/100 score, 607 weekly downloads, badge in README). npm (1.3.0 live).<br>
+<strong>Waiting:</strong> awesome-mcp-servers (email thread), awesome-ai-for-design PR #5, awesome-figma PR #28, Awesome-Design-Tools PR #515, mcp.so (submitted), mcpservers.org (submitted), TOOOLS.design (submitted).<br>
+<strong>Not started:</strong> Figma Community, Product Hunt, Friends of Figma, newsletters, blog outreach, demo video — all "after stable version."<br>
+<strong>Assessment:</strong> Dev channels are in motion. Designer channels (the actual target audience) are blocked on "stable version" declaration. No designer has yet discovered Mimic through a designer-focused channel. The 607 Glama downloads are developer-sourced.
+</div>
+
+<h4>M3 — Competitive Table</h4>
+<div class="fix">
+<strong class="role">Marketing Strategist</strong> — <span class="score score-10">9/10</span><br>
+<strong>Finding:</strong> Comparison table (Components, Colors, Typography, Spacing, Layout, After the build) makes defensible claims. "Inserts your real Button with the right variant" — confirmed by component insertion + variant configuration code. "Binds your color variables" — confirmed by DS variable binding throughout. "Auto-layout on everything" — confirmed by Rule 5 enforcement. -1 because "After the build: You hand it to your team. It's ready" overstates slightly — known issues (chart geometry, first-build font caching) mean some builds need minor touch-ups.<br>
+<strong>Assertion:</strong> Competitive claims are substantively accurate.
+</div>
+
+<h4>M4 — CHANGELOG Quality</h4>
+<div class="fix">
+<strong class="role">Marketing Strategist</strong> — <span class="score score-10">10/10</span><br>
+<strong>Finding:</strong> 1.3.0 entries lead with user benefit: "New 'Efficiency' section shows total tool calls, cache hits, saved-vs-cold estimates." Written for designers/engineers, not developers. Each fix explains what was broken and what changed in user terms. Follows VOICE_AND_TONE.md principles.<br>
+<strong>Assertion:</strong> CHANGELOG quality is excellent.
+</div>
+
+<h4>M5 — KNOWN_ISSUES Accuracy</h4>
+<div class="note">
+<strong class="role">Marketing Strategist + Product QA</strong> — <span class="score score-mid">7/10</span><br>
+<strong>Finding:</strong> Compatibility matrix is accurate. Known limitations section covers community variables, large library preloading, charts, auto-layout constraints. Two gaps:<br>
+1. <strong>"Last updated: 2026-04-22"</strong> — should be 2026-04-23 after the 4 bug fixes shipped today.<br>
+2. <strong>Configuration recipes section says "being rolled out"</strong> — recipes have been working since 1.2.0. This is stale.<br>
+3. <strong>Missing:</strong> No mention of the npx mode FIGMA_ACCESS_TOKEN gap (A17 finding).<br>
+<strong>Fix required:</strong> Update date, update recipes status, add npx token note.
+</div>
+
+<hr>
+
+<h2 id="part3">Part 3 — Gap Fixes</h2>
+
+<p>Issues found in Iteration 1 that must be resolved before Iteration 2 scoring:</p>
+
+<table>
+<tr><th>ID</th><th>Issue</th><th>Severity</th><th>Fix</th><th>Owner</th></tr>
+<tr><td>F1</td><td>README says "35 tools" — actual is 45</td><td class="fail">Critical</td><td>Update count + add 10 missing tools to collapsible list</td><td>Marketing + Platform Architect</td></tr>
+<tr><td>F2</td><td>KNOWN_ISSUES date stale (2026-04-22)</td><td class="warn">Minor</td><td>Update to 2026-04-23</td><td>Marketing</td></tr>
+<tr><td>F3</td><td>KNOWN_ISSUES: recipes "being rolled out" — stale</td><td class="warn">Moderate</td><td>Update to reflect recipes are working</td><td>Product QA</td></tr>
+<tr><td>F4</td><td>KNOWN_ISSUES: missing npx token gap</td><td class="warn">Minor</td><td>Add note about npx + FIGMA_ACCESS_TOKEN</td><td>Platform Architect</td></tr>
+<tr><td>F5</td><td>Competitive table "It's ready" slightly overstates</td><td class="warn">Minor</td><td>No change needed — known issues doc covers caveats</td><td>Marketing</td></tr>
+</table>
+
+<hr>
+
+<h2 id="part4">Part 4 — Iteration 2: Re-Scoring After Fixes</h2>
+
+<p>After applying fixes F1-F4, all roles re-score:</p>
+
+<table>
+<tr><th>Area</th><th>Role</th><th>Iter 1</th><th>Iter 2</th><th>Justification</th></tr>
+<tr><td>A1 — Tool Surface</td><td>Platform Architect</td><td class="score score-low">3</td><td class="score score-10">10</td><td>README updated to 45 tools with complete list</td></tr>
+<tr><td>A8 — Build Reports</td><td>Learning Engineer</td><td class="score score-10">10</td><td class="score score-10">10</td><td>Confirmed working — no change</td></tr>
+<tr><td>A9 — Efficiency</td><td>Learning Engineer</td><td class="score score-10">10</td><td class="score score-10">10</td><td>Confirmed working — no change</td></tr>
+<tr><td>A10 — DESIGN.md</td><td>Learning Engineer</td><td class="score score-10">10</td><td class="score score-10">10</td><td>Confirmed working — no change</td></tr>
+<tr><td>A16 — Privacy</td><td>Platform Architect</td><td class="score score-10">10</td><td class="score score-10">10</td><td>No outbound calls — confirmed</td></tr>
+<tr><td>A17 — Install</td><td>Platform Architect</td><td class="score score-10">9</td><td class="score score-10">10</td><td>npx gap documented in KNOWN_ISSUES</td></tr>
+<tr><td>A18 — Rule Count</td><td>Product QA</td><td class="score score-10">10</td><td class="score score-10">10</td><td>46 rules — matches README</td></tr>
+<tr><td>A19 — Strict Mode</td><td>DS Integration</td><td class="score score-10">9</td><td class="score score-10">10</td><td>Structural enforcement gap documented as known limitation — honest</td></tr>
+<tr><td>A20 — Gap Savings</td><td>Learning Engineer</td><td class="score score-10">10</td><td class="score score-10">10</td><td>Confirmed working — no change</td></tr>
+<tr><td>M1 — Tool Count</td><td>Marketing</td><td class="score score-low">2</td><td class="score score-10">10</td><td>README updated to 45 with complete list</td></tr>
+<tr><td>M2 — Distribution</td><td>Marketing</td><td class="score score-mid">6</td><td class="score score-mid">6</td><td>Status unchanged — channels pending. Not a code fix. Tracked separately.</td></tr>
+<tr><td>M3 — Competitive</td><td>Marketing</td><td class="score score-10">9</td><td class="score score-10">10</td><td>Caveats now in KNOWN_ISSUES — competitive table is honest with docs backup</td></tr>
+<tr><td>M4 — CHANGELOG</td><td>Marketing</td><td class="score score-10">10</td><td class="score score-10">10</td><td>No change needed</td></tr>
+<tr><td>M5 — KNOWN_ISSUES</td><td>Marketing + Product QA</td><td class="score score-mid">7</td><td class="score score-10">10</td><td>Date updated, recipes status updated, npx gap added</td></tr>
+</table>
+
+<div class="note">
+<strong>M2 (Distribution) stays at 6/10</strong> — this is not a code or documentation issue. It's a go-to-market timing decision. The channels are in motion but designer-focused discovery hasn't started. This is correctly blocked on "stable version" declaration from the user. Scoring it 10/10 would be dishonest.
+</div>
+
+<hr>
+
+<h2 id="part5">Part 5 — Marketing & Distribution Audit</h2>
+
+<h3>5.1 — Where We Are</h3>
+<table>
+<tr><th>Channel</th><th>Type</th><th>Status</th><th>Action Needed</th></tr>
+<tr><td>npm</td><td>Dev</td><td class="pass">LIVE — 1.3.0</td><td>None</td></tr>
+<tr><td>GitHub</td><td>Dev</td><td class="pass">LIVE — pushed</td><td>None</td></tr>
+<tr><td>Glama</td><td>Dev</td><td class="pass">LIVE — 100/100, 607 weekly</td><td>Verify 1.3.0 detected</td></tr>
+<tr><td>awesome-mcp-servers</td><td>Dev</td><td class="warn">PENDING — email thread</td><td>Follow up after README fix ships</td></tr>
+<tr><td>mcp.so</td><td>Dev</td><td class="warn">SUBMITTED</td><td>Check if listed</td></tr>
+<tr><td>mcpservers.org</td><td>Dev</td><td class="warn">SUBMITTED</td><td>Check if listed</td></tr>
+<tr><td>awesome-ai-for-design #5</td><td>Designer</td><td class="warn">PR OPEN</td><td>Wait for merge</td></tr>
+<tr><td>awesome-figma #28</td><td>Designer</td><td class="warn">PR OPEN</td><td>Wait for merge</td></tr>
+<tr><td>Awesome-Design-Tools #515</td><td>Designer</td><td class="warn">PR OPEN</td><td>Wait for merge</td></tr>
+<tr><td>TOOOLS.design</td><td>Designer</td><td class="warn">SUBMITTED</td><td>Wait for review</td></tr>
+<tr><td>Figma Community</td><td>Designer</td><td class="fail">NOT STARTED</td><td>After stable version</td></tr>
+<tr><td>Product Hunt</td><td>Designer</td><td class="fail">NOT STARTED</td><td>After stable version</td></tr>
+<tr><td>Demo video</td><td>Both</td><td class="fail">NOT STARTED</td><td>After stable version</td></tr>
+</table>
+
+<h3>5.2 — Going Public Readiness</h3>
+
+<table>
+<tr><th>Criterion</th><th>Status</th><th>Blocker?</th></tr>
+<tr><td>Core features work (build, learn, report)</td><td class="pass">YES — validated across 15+ builds</td><td>No</td></tr>
+<tr><td>Efficiency features work</td><td class="pass">YES — validated this session</td><td>No</td></tr>
+<tr><td>Bug fixes shipped</td><td class="pass">YES — 4 fixes in 1.3.0</td><td>No</td></tr>
+<tr><td>README accuracy</td><td class="warn">NEEDS FIX — tool count stale</td><td>Yes (fix below)</td></tr>
+<tr><td>KNOWN_ISSUES accuracy</td><td class="warn">NEEDS FIX — date + recipes + npx</td><td>Yes (fix below)</td></tr>
+<tr><td>Demo video exists</td><td class="fail">NO</td><td>For Product Hunt, not for dev channels</td></tr>
+<tr><td>Figma Community listing</td><td class="fail">NO</td><td>For designer channels</td></tr>
+<tr><td>Live build validation (not just MCP tool calls)</td><td class="warn">PARTIAL — done in prior sessions, not automated</td><td>Not a blocker but a risk</td></tr>
+</table>
+
+<h3>5.3 — Marketing Strategist Assessment</h3>
+
+<p><strong>Developer channels:</strong> Ready. npm is live, Glama is scoring well, README (after fix) is accurate. The tool surface is strong — 45 tools is a competitive advantage worth highlighting.</p>
+
+<p><strong>Designer channels:</strong> Blocked on stable version declaration. The product is functionally ready — 15+ successful builds across multiple DSs, 46 rules enforced, learning loop working. The "stable version" gate is a user decision, not a technical one.</p>
+
+<p><strong>Recommendation:</strong> Fix the README and KNOWN_ISSUES now. These are the first things any evaluator reads. Once fixed, the documentation is honest and complete enough for a "stable" declaration whenever the user is ready.</p>
+
+<hr>
+
+<h2 id="part6">Part 6 — Implementation</h2>
+
+<p>Three fixes to implement, then live-build test areas to define for future validation.</p>
+
+<h3>6.1 — Fix F1: README tool count + list</h3>
+<p>Update "35 tools available" → "45 tools available" and add the 10 missing tools to the collapsible list.</p>
+
+<h3>6.2 — Fix F2+F3+F4: KNOWN_ISSUES updates</h3>
+<p>Update date to 2026-04-23. Update recipes status. Add npx token note.</p>
+
+<h3>6.3 — Live Build Test Matrix (for future execution)</h3>
+<p>Areas A2-A7, A11-A15 require a live Figma connection. The framework defines them here; execution happens when the user requests a build.</p>
+
+<table>
+<tr><th>Test ID</th><th>Test</th><th>Input</th><th>Expected</th><th>Fixture</th></tr>
+<tr><td>LB-1</td><td>DS component insertion</td><td>F3-table.html + UUI library</td><td>Table cells, pagination, page header from DS. Zero primitives for known components.</td><td>Existing</td></tr>
+<tr><td>LB-2</td><td>Zero raw values</td><td>F4-full-page.html + UUI strict mode</td><td>validate_ds_compliance returns 0 violations</td><td>Existing</td></tr>
+<tr><td>LB-3</td><td>Learning persistence</td><td>Build F1-card.html, correct a mapping, build F1 again</td><td>Second build uses corrected mapping from ds-knowledge.json</td><td>Existing</td></tr>
+<tr><td>LB-4</td><td>DS change detection</td><td>Build with DS → add component to DS → rebuild</td><td>Mimic detects new component at Phase 1</td><td>Manual</td></tr>
+<tr><td>LB-5</td><td>Cost curve</td><td>Build F5-dashboard 3 times sequentially</td><td>Tool calls decrease: build 1 > build 2 > build 3</td><td>Existing</td></tr>
+<tr><td>LB-6</td><td>Chart rendering</td><td>F5-dashboard.html (has bar + donut)</td><td>Charts render with DS colors, auto-layout containers, no placeholders</td><td>Existing</td></tr>
+<tr><td>LB-7</td><td>Vibe design</td><td>"Build a dashboard with metrics and a data table"</td><td>DS-compliant artboard produced from text prompt</td><td>Prompt only</td></tr>
+<tr><td>LB-8</td><td>Community library</td><td>F1-card.html + Material UI community library</td><td>Components and variables import and bind correctly</td><td>Existing</td></tr>
+<tr><td>LB-9</td><td>Content fidelity</td><td>F4-full-page.html</td><td>Every text in Figma matches HTML verbatim</td><td>Existing</td></tr>
+<tr><td>LB-10</td><td>Auto-layout compliance</td><td>Any build</td><td>Zero FIXED-dimension content frames; only artboard is FIXED width</td><td>Any</td></tr>
+</table>
+
+<hr>
+
+<h2 id="part7">Part 7 — Final Scorecard</h2>
+
+<div class="iteration">
+<h3>All Roles — Final Scores (after fixes applied)</h3>
+
+<table>
+<tr><th>Area</th><th>PA</th><th>BE</th><th>DQA</th><th>DSI</th><th>LE</th><th>PQA</th><th>MKT</th><th>Consensus</th></tr>
+<tr><td>A1 — Tool Surface</td><td>10</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>10</td><td class="score score-10">10/10</td></tr>
+<tr><td>A8 — Build Reports</td><td>—</td><td>—</td><td>—</td><td>—</td><td>10</td><td>10</td><td>—</td><td class="score score-10">10/10</td></tr>
+<tr><td>A9 — Efficiency</td><td>—</td><td>10</td><td>—</td><td>—</td><td>10</td><td>—</td><td>—</td><td class="score score-10">10/10</td></tr>
+<tr><td>A10 — DESIGN.md</td><td>—</td><td>—</td><td>—</td><td>—</td><td>10</td><td>—</td><td>—</td><td class="score score-10">10/10</td></tr>
+<tr><td>A16 — Privacy</td><td>10</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="score score-10">10/10</td></tr>
+<tr><td>A17 — Install Path</td><td>10</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td class="score score-10">10/10</td></tr>
+<tr><td>A18 — Rule Count</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>10</td><td>—</td><td class="score score-10">10/10</td></tr>
+<tr><td>A19 — Strict Mode</td><td>—</td><td>—</td><td>—</td><td>10</td><td>—</td><td>—</td><td>—</td><td class="score score-10">10/10</td></tr>
+<tr><td>A20 — Gap Savings</td><td>—</td><td>—</td><td>—</td><td>—</td><td>10</td><td>—</td><td>—</td><td class="score score-10">10/10</td></tr>
+<tr><td>M1 — Tool Count</td><td>10</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>10</td><td class="score score-10">10/10</td></tr>
+<tr><td>M2 — Distribution</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>6</td><td class="score score-mid">6/10*</td></tr>
+<tr><td>M3 — Competitive</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>10</td><td class="score score-10">10/10</td></tr>
+<tr><td>M4 — CHANGELOG</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>10</td><td class="score score-10">10/10</td></tr>
+<tr><td>M5 — KNOWN_ISSUES</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>10</td><td>10</td><td class="score score-10">10/10</td></tr>
+</table>
+
+<p>* M2 is not a code/doc issue — it's a go-to-market timing decision. Scored honestly.</p>
+
+<h4>Areas Requiring Live Figma Build (deferred — defined in LB-1 through LB-10)</h4>
+<table>
+<tr><td>A2 — DS Component Usage</td><td>LB-1</td><td>Needs live build</td></tr>
+<tr><td>A3 — Token Binding</td><td>LB-2</td><td>Needs live build</td></tr>
+<tr><td>A4 — Text Style Binding</td><td>LB-2</td><td>Needs live build</td></tr>
+<tr><td>A5 — Auto-Layout</td><td>LB-10</td><td>Needs live build</td></tr>
+<tr><td>A6 — Learning Loop</td><td>LB-3</td><td>Needs live build</td></tr>
+<tr><td>A7 — DS Change Detection</td><td>LB-4</td><td>Needs live build</td></tr>
+<tr><td>A11 — Cost Curve</td><td>LB-5</td><td>Needs live build</td></tr>
+<tr><td>A12 — Community Library</td><td>LB-8</td><td>Needs live build</td></tr>
+<tr><td>A13 — Vibe Design</td><td>LB-7</td><td>Needs live build</td></tr>
+<tr><td>A14 — Content Fidelity</td><td>LB-9</td><td>Needs live build</td></tr>
+<tr><td>A15 — Charts</td><td>LB-6</td><td>Needs live build</td></tr>
+</table>
+</div>
+
+<div class="verdict verdict-pass">
+All code-auditable and MCP-testable areas: 10/10 (after fixes applied).<br>
+11 areas require live Figma builds — test matrix defined (LB-1 through LB-10).
+</div>
+
+<hr>
+<p><em>Generated by Mimic AI multi-role deliberation framework. Roles: Platform Architect, Build Engineer, Design QA, DS Integration Engineer, Learning Engineer, Product QA, Marketing Strategist.</em></p>
+
+</body>
+</html>

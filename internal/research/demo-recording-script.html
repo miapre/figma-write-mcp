@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Demo GIF — Recording Script & Pre-Flight Checklist</title>
+<style>
+  body { font-family: Inter, -apple-system, sans-serif; max-width: 1000px; margin: 40px auto; padding: 0 24px; color: #1a1a1a; line-height: 1.6; }
+  h1 { font-size: 24px; border-bottom: 2px solid #1043cc; padding-bottom: 8px; }
+  h2 { font-size: 18px; margin-top: 36px; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; }
+  h3 { font-size: 15px; margin-top: 20px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  th { text-align: left; padding: 8px 10px; background: #f0f4ff; border-bottom: 2px solid #d0ddff; font-weight: 600; }
+  td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+  .pass { color: #079455; font-weight: 600; }
+  .warn { color: #dc6803; font-weight: 600; }
+  .fail { color: #d92d20; font-weight: 600; }
+  .block { padding: 14px; border-radius: 8px; margin: 12px 0; }
+  .green { background: #ecfdf3; border-left: 3px solid #079455; }
+  .red { background: #fef3f2; border-left: 3px solid #d92d20; }
+  .yellow { background: #fffaeb; border-left: 3px solid #dc6803; }
+  .blue { background: #f0f4ff; border-left: 3px solid #1043cc; }
+  code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-size: 12px; }
+  pre { background: #f5f5f5; padding: 14px; border-radius: 6px; overflow-x: auto; font-size: 12px; }
+  hr { border: none; border-top: 1px solid #e5e7eb; margin: 28px 0; }
+  .step { counter-increment: step; padding: 12px 16px; margin: 8px 0; border-radius: 8px; background: #fafafa; border: 1px solid #e9eaeb; }
+  .step::before { content: "Step " counter(step); font-weight: 700; color: #1043cc; font-size: 12px; display: block; margin-bottom: 4px; }
+  .timing { display: inline-block; background: #1043cc; color: #fff; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-left: 8px; }
+  ol { counter-reset: step; list-style: none; padding: 0; }
+  .checklist { list-style: none; padding: 0; }
+  .checklist li { padding: 6px 0; border-bottom: 1px solid #f3f4f6; }
+  .checklist li::before { content: "☐ "; font-size: 16px; }
+</style>
+</head>
+<body>
+
+<h1>Demo GIF — Recording Script</h1>
+<p><strong>Goal:</strong> Record a full Mimic build showing <strong>three things that matter</strong>: (1) DS components appearing in real-time, (2) the learning + report output that proves this isn't a one-shot tool, (3) the DS-agnostic proof. The report and learning phase are not an afterthought — they're half the product.</p>
+<p><strong>Format:</strong> Video (MP4 or GIF), 30-60 seconds, with 6 acts. The build is sped up; the report holds at 1x so the viewer can read the numbers.</p>
+
+<hr>
+
+<h2>Part 1 — Pre-Flight Checklist</h2>
+<p>Run every item before starting the recording. Any failure = stop and fix.</p>
+
+<h3>1A — Environment</h3>
+<ul class="checklist">
+  <li><strong>Figma desktop app</strong> open (not browser)</li>
+  <li><strong>File:</strong> <code>RegZn1TOMu2wj4rXmHSzcF</code> (Mimic-Test) — open in Figma</li>
+  <li><strong>Page:</strong> Navigate to the page with the demo section (<code>8172:29577</code>)</li>
+  <li><strong>UUI library enabled:</strong> Assets panel → Team library icon → "Untitled UI PRO STYLES" toggled ON</li>
+  <li><strong>Plugin running:</strong> Plugins → Development → Mimic AI → Run. Green "Connected" status visible.</li>
+  <li><strong>Bridge running:</strong> Terminal: <code>cd ~/mimic-ai && npm run bridge</code> — shows "Bridge ready on :3055"</li>
+  <li><strong>MCP connected:</strong> Claude Code session with Mimic AI MCP server listed in tools</li>
+  <li><strong>Clean canvas:</strong> Create a NEW empty page for the recording build (don't build on top of existing artboards)</li>
+</ul>
+
+<h3>1B — Warm the Cache</h3>
+<div class="yellow block">
+<strong>Critical for a flawless build.</strong> Run these commands in Claude Code BEFORE recording. This ensures fonts are loaded, styles are cached, and component keys are resolved. A cold-start build will pause on font loading and style discovery — looks bad on camera.
+</div>
+
+<pre>
+# In Claude Code, before recording:
+
+1. "Run mimic_status" → Confirm bridge: connected, plugin: connected
+2. "Run mimic_discover_ds for the Untitled UI library"
+   → This caches all component keys, text styles, and variable names
+3. "Preload all text styles from UUI"
+   → figma_preload_styles with the UUI style keys
+4. "Set session defaults: dsMode strict, textFillStyleKey for text-primary"
+   → figma_set_session_defaults
+</pre>
+
+<p>After these 4 commands, the cache is warm. The actual build will use cached patterns and skip discovery.</p>
+
+<h3>1C — Verify Existing Artboards</h3>
+<ul class="checklist">
+  <li><strong>Reference artboard</strong> <code>8110:316</code> still exists (don't delete it — Rule 31)</li>
+  <li><strong>5 demo artboards</strong> in section <code>8172:29577</code> still exist (DS 1-5)</li>
+  <li><strong>Demo HTML</strong> at <code>internal/research/test-fixtures/demo-landing-page.html</code> — unmodified</li>
+</ul>
+
+<h3>1D — Recording Setup</h3>
+<ul class="checklist">
+  <li><strong>Screen recorder:</strong> CleanShot / Kap / OBS — set to record Figma window</li>
+  <li><strong>Resolution:</strong> 1440px wide minimum (matches artboard width)</li>
+  <li><strong>Frame rate:</strong> 15-30fps (GIF-friendly)</li>
+  <li><strong>Zoom:</strong> Figma at ~50% zoom so the full artboard is visible as it builds</li>
+  <li><strong>Terminal visible:</strong> Claude Code terminal should be visible alongside Figma (split screen or picture-in-picture) so viewers see the prompts + Phase progress</li>
+</ul>
+
+<hr>
+
+<h2>Part 2 — What the Build Will Produce</h2>
+
+<h3>Component Map (Phase 1 expected output)</h3>
+
+<table>
+<tr><th>HTML Section</th><th>DS Component?</th><th>Expected Resolution</th></tr>
+<tr><td>Nav bar</td><td class="pass">YES</td><td>Header navigation (Desktop) — logo, links, 2 buttons</td></tr>
+<tr><td>Hero badge</td><td class="pass">YES</td><td>Badge (Pill color, Brand) — "New — Real-time pipelines in beta"</td></tr>
+<tr><td>Hero buttons (2)</td><td class="pass">YES</td><td>Button Primary (lg) + Button Secondary gray (lg)</td></tr>
+<tr><td>Metric cards (4)</td><td class="warn">PRIMITIVE</td><td>No Metric Card in UUI. Primitive with DS text styles + variables.</td></tr>
+<tr><td>Feature overline + heading</td><td class="warn">PRIMITIVE</td><td>No Section Header in UUI matching this layout. Primitives.</td></tr>
+<tr><td>Tabs (4)</td><td class="pass">YES</td><td>Horizontal tabs — 4 tabs configured</td></tr>
+<tr><td>Feature cards (3)</td><td class="warn">PRIMITIVE</td><td>No Feature Card in UUI. Primitive with DS tokens.</td></tr>
+<tr><td>Bar chart</td><td class="warn">PRIMITIVE</td><td>figma_create_chart (type: bar) with DS color variables</td></tr>
+<tr><td>Donut chart</td><td class="warn">PRIMITIVE</td><td>figma_create_chart (type: donut) with categoryVariables (1.3.0 fix)</td></tr>
+<tr><td>Table heading</td><td class="pass">YES</td><td>Table header cell × 4</td></tr>
+<tr><td>Table rows (6)</td><td class="pass">YES</td><td>Table cell × 24 (6 rows × 4 columns)</td></tr>
+<tr><td>CTA input</td><td class="pass">YES</td><td>Input field — placeholder "your@company.com"</td></tr>
+<tr><td>CTA button</td><td class="pass">YES</td><td>Button Primary — "Get started"</td></tr>
+<tr><td>Footer</td><td class="pass">YES</td><td>Footer (Desktop) — brand + 3 link columns</td></tr>
+</table>
+
+<p><strong>Expected totals:</strong> ~10 DS component types, ~40+ DS component instances, 4 primitive sections (metrics, feature cards, charts). This is a realistic mix — shows DS usage AND gap detection.</p>
+
+<h3>Known Risk Areas</h3>
+
+<table>
+<tr><th>Risk</th><th>Mitigation</th></tr>
+<tr><td>Font loading delay on first text node</td><td>Cache warm-up (1B) preloads all UUI text styles</td></tr>
+<tr><td>Donut chart strict mode failure</td><td>Fixed in 1.3.0 — <code>categoryVariables</code> now maps correctly</td></tr>
+<tr><td>Table cell text overrides incomplete</td><td>Known depth issue (Build #005). Plan: set all text via <code>set_component_text</code> targeting by node name, not index</td></tr>
+<tr><td>Badge/Button icon placeholders visible</td><td>Rule 37 — all icon booleans set to false systematically after insert</td></tr>
+<tr><td>Hero title line break</td><td>HTML has <code>&lt;br&gt;</code> — Rule 42 says container width controls wrapping, no \n. Will be single text node, container determines wrap.</td></tr>
+<tr><td>Metric "12B+" mixed color</td><td>HTML has no <code>&lt;span&gt;</code> color splits in this version — all single color. Safe.</td></tr>
+<tr><td>Check/dash characters in table</td><td>✓ and — are text characters, not icons. Allowed per Rule 12 note — these aren't icon substitutions, they're actual content.</td></tr>
+</table>
+
+<hr>
+
+<h2>Part 3 — Recording Script (6 Acts)</h2>
+
+<div class="blue block">
+<strong>Narrative arc:</strong> Prompt → Discovery → Build → Learning → Report → Variants.<br>
+<strong>Time budget:</strong> ~4-5 min real-time → edited to 30-60 seconds.<br>
+<strong>Layout:</strong> Split screen — Claude Code terminal (left ~40%), Figma canvas (right ~60%). Both always visible. The viewer sees intent + result simultaneously.<br>
+<strong>What sells it:</strong> Not just "look, a Figma artboard appeared." Three punchlines: (1) real DS components, not rectangles, (2) "4 patterns learned" — it gets smarter, (3) "Your DS is missing a Metric Card" — it audits your system.
+</div>
+
+<h3>Act 1 — The Prompt <span class="timing">0:00 – 0:03 in final cut</span></h3>
+
+<div class="step">
+<strong>You type in Claude Code:</strong><br>
+<code>Build this HTML in Figma using my design system.</code><br>
+<em>+ file path to demo-landing-page.html</em><br><br>
+<strong>Camera:</strong> Split screen. Terminal on left, empty Figma canvas on right. The prompt is the opening frame — hold it for 1-2 seconds so the viewer reads it.<br>
+<strong>Speed:</strong> 1x. This is the hook. The viewer needs to understand the input.
+</div>
+
+<h3>Act 2 — Discovery (the brain) <span class="timing">0:03 – 0:08</span></h3>
+
+<div class="step">
+<strong>Terminal shows Phase 0-2 scrolling:</strong><br>
+<pre>
+Phase 0 — Target
+  [x] File & page confirmed
+  [x] Artboard: x=0, DS mode: strict
+
+Phase 1 — DS Discovery (10 matched, 4 fallbacks)
+  [x] Nav → Header navigation (Desktop)
+  [x] Badge → Badge (Pill color, Brand)
+  [x] Buttons → Button (Primary/Secondary)
+  [x] Tabs → Horizontal tabs
+  [x] Table → Table header cell (×4) + Table cell (×24)
+  [x] Input → Input field
+  [x] Footer → Footer (Desktop)
+  [x] Metric cards → primitive (searched: stat, KPI, metric — no match)
+  [x] Feature cards → primitive (no match)
+  [x] Charts → primitive (bar + donut)
+  Cache: 18 from cache, 2 new, 0 invalidated
+
+Phase 2 — Styles & Variables (12 text styles, 16 color vars)
+  [x] All text mapped, all colors mapped, spacing ready
+</pre>
+<strong>Camera:</strong> Terminal dominates. Figma still empty — anticipation.<br>
+<strong>Speed:</strong> 4-6x. Fast enough to see lines appearing without reading every one. The viewer gets: "it's analyzing the HTML and mapping to DS components." The "18 from cache" line is a signal even at speed — the cache number implies this isn't the first build.<br>
+<strong>Key frame:</strong> Brief hold on "10 matched, 4 fallbacks" — the ratio tells the story.
+</div>
+
+<h3>Act 3 — The Build (the craft) <span class="timing">0:08 – 0:22</span></h3>
+
+<div class="step">
+<strong>Camera:</strong> Figma dominates (70%). Terminal shows Phase 3 checkboxes updating. The artboard builds section by section, top to bottom.<br><br>
+
+<strong>Speed:</strong> 4-8x — fast enough to be impressive, slow enough to see individual components materializing (not just a blur). Slow down slightly for the table section — 28 DS component instances appearing in a grid is the visual proof that this isn't drawing rectangles.<br><br>
+
+<strong>Key visual beats (hold briefly at each):</strong>
+<ol style="list-style: decimal; padding-left: 20px;">
+  <li><strong>Header nav appears</strong> — instant recognition: "that's a real navigation component, not a frame with text"</li>
+  <li><strong>Hero with badge + buttons</strong> — purple badge pill, two real Button components</li>
+  <li><strong>Tabs component</strong> — 4 tabs with correct labels, active state set. Viewer sees: real DS tab bar, not underlined text.</li>
+  <li><strong>Pricing table builds row by row</strong> — THE showstopper. Slow to 2-3x here. 28 DS table cells appearing in formation. Check marks and dashes in the right columns. This is where the viewer thinks "ok, this actually uses the design system."</li>
+  <li><strong>Charts</strong> — bar chart with purple/gray bars, donut with 3-color segments. Auto-layout containers. Quick beat.</li>
+  <li><strong>Footer component</strong> — brand + 3 link columns, all text overridden. Build complete.</li>
+</ol>
+
+<strong>Terminal (visible but secondary):</strong>
+<pre>
+Phase 3 — Build (52 frames, 42 DS component instances)
+  [x] Header navigation (DS)
+  [x] Hero (badge + heading + buttons)
+  [x] Metrics (4 cards, primitive)
+  [x] Features (tabs DS + 3 cards)
+  [x] Charts (bar + donut)
+  [x] Pricing table (28 DS cells)
+  [x] CTA (input DS + button DS)
+  [x] Footer (DS)
+</pre>
+</div>
+
+<h3>Act 4 — Learning (the brain again) <span class="timing">0:22 – 0:30</span></h3>
+
+<div class="step">
+<strong>This act is what makes Mimic different. Don't rush it.</strong><br><br>
+
+<strong>Camera:</strong> Terminal dominates (70%). Figma shows the completed artboard in background.<br>
+<strong>Speed:</strong> 1-2x. The viewer needs to READ these lines.<br><br>
+
+<strong>Terminal shows:</strong>
+<pre>
+Phase 4 — QA
+  [x] Screenshot — content matches HTML
+  [x] DS compliance: 42/42 component nodes compliant
+  [x] 0 post-QA fixes
+
+Learned this build:
+  - button/secondary → Button (md, Secondary gray) — promoted to strong (5 builds)
+  - table/cell-badge → Table cell (Badge variant) — new pattern
+  - badge/announcement → Badge (Pill color, Brand) — confirmed (3 builds)
+  - tab/horizontal → Horizontal tabs (4 items) — promoted to strong
+
+Cache: 20 verified, 2 new discoveries. Next build uses 22 cached patterns.
+</pre>
+
+<strong>Why this matters:</strong> The "Learned this build" block is Mimic's differentiator. Every other tool does the same thing next time. Mimic gets smarter. The viewer sees: pattern names, confidence levels, build counts. This is the compound value promise made visible.
+</div>
+
+<h3>Act 5 — The Report (the audit) <span class="timing">0:30 – 0:42</span></h3>
+
+<div class="step">
+<strong>Two beats in this act:</strong><br><br>
+
+<strong>Beat 1 — Terminal summary</strong> (hold 3-4 seconds at 1x speed):<br>
+<pre>
+Build complete. 9 sections, 67 tool calls (18 from cache — saved ~73 vs first build).
+DS components: 42 instances (Header nav, Badge, Button ×6, Tabs, Table cells ×28, Input, Footer).
+Primitives: 4 sections — adding Metric Card + Feature Card would save ~35 calls/build.
+Issues: 0.
+
+DS gap recommendations:
+  - Should your DS include a Metric Card? (4 elements, 3 builds, all primitives)
+    → Adding it would save ~20 calls/build
+  - Should your DS include a Feature Card? (3 elements, 3 builds)
+    → Adding it would save ~15 calls/build
+
+Full report: mimic/reports/build-demo.html
+
+Want this report saved? (markdown or html)
+</pre>
+
+<strong>Beat 2 — HTML report opens in browser</strong> (hold 3-4 seconds):<br>
+Cut to the HTML build report open in a browser tab. The viewer sees a styled document with:
+<ul>
+  <li>DS usage table (components + primitives)</li>
+  <li>Patterns table with confidence levels and build counts</li>
+  <li>Efficiency section (tool calls, cache hits, savings)</li>
+  <li>DS gap recommendations with call savings</li>
+</ul>
+<strong>This is the "every build is a DS review" promise visualized.</strong> A shareable, styled report the viewer could send to their team. Not terminal output — a real document.<br><br>
+
+<strong>Speed:</strong> 1x for both beats. The report is the product. Let the viewer read it.
+</div>
+
+<h3>Act 6 — The Variants (the proof) <span class="timing">0:42 – 0:50</span></h3>
+
+<div class="step">
+<strong>Camera:</strong> Figma zooms out to show all 5 artboards side by side:<br>
+<ol style="list-style: decimal; padding-left: 20px;">
+  <li>UUI (just built — purple/white)</li>
+  <li>Midnight (dark, cyan accent)</li>
+  <li>Coral (warm, orange accent)</li>
+  <li>Neon (dark, pink accent)</li>
+  <li>Forest (green accent)</li>
+</ol>
+
+<strong>Text overlay (if video) or terminal note (if GIF):</strong><br>
+<em>"Same HTML. 5 design systems. 5 outputs."</em><br><br>
+
+<strong>Hold for 3-4 seconds.</strong> This is the closing frame. The visual diversity is the DS-agnostic proof — no hardcoded colors, no assumed fonts, no baked-in brand. Each artboard looks native to its DS.<br><br>
+
+<strong>Speed:</strong> 1x. Let the viewer scan all 5.
+</div>
+
+<h3>Summary: What the viewer takes away</h3>
+
+<div class="green block">
+<strong>6 impressions in 50 seconds:</strong>
+<ol style="list-style: decimal; padding-left: 20px;">
+  <li><strong>"It reads my HTML and maps to my DS"</strong> — Act 2 (discovery)</li>
+  <li><strong>"Those are real components, not rectangles"</strong> — Act 3 (table building)</li>
+  <li><strong>"It learns and gets smarter"</strong> — Act 4 (pattern-learned notification)</li>
+  <li><strong>"It tells me what my DS is missing"</strong> — Act 5 (gap recommendations with savings)</li>
+  <li><strong>"I can share this report with my team"</strong> — Act 5 (HTML report in browser)</li>
+  <li><strong>"It works with any DS, not just one"</strong> — Act 6 (5 variants)</li>
+</ol>
+The build is the commodity. The learning + report + DS-agnosticism is the product.
+</div>
+
+<hr>
+
+<h2>Part 4 — Post-Recording: Editing Guide</h2>
+
+<h3>Speed map</h3>
+<table>
+<tr><th>Act</th><th>Real-time</th><th>Edit speed</th><th>Final duration</th><th>Why</th></tr>
+<tr><td>1 — Prompt</td><td>~10s</td><td>1x</td><td>3s</td><td>Viewer reads the input. Trim dead time before response.</td></tr>
+<tr><td>2 — Discovery</td><td>~30s</td><td>4-6x</td><td>5s</td><td>Fast scroll. "10 matched, 4 fallbacks" is the only line that needs to register.</td></tr>
+<tr><td>3 — Build</td><td>~2.5min</td><td>4-8x (2-3x on table)</td><td>14s</td><td>The table building at 2-3x is the visual highlight. Everything else can fly.</td></tr>
+<tr><td>4 — Learning</td><td>~15s</td><td>1x</td><td>8s</td><td><strong>DO NOT SPEED UP.</strong> The pattern-learned block is the differentiator. Viewer must read it.</td></tr>
+<tr><td>5 — Report</td><td>~20s</td><td>1x</td><td>12s</td><td><strong>DO NOT SPEED UP.</strong> Two beats: terminal summary (5s) + HTML report in browser (7s). This is the product.</td></tr>
+<tr><td>6 — Variants</td><td>~5s</td><td>1x</td><td>4s</td><td>Zoom out. Hold. 5 artboards. Closing frame.</td></tr>
+<tr><td colspan="3"><strong>Total</strong></td><td><strong>~46s</strong></td><td></td></tr>
+</table>
+
+<h3>Format decision</h3>
+<table>
+<tr><th>Parameter</th><th>If GIF</th><th>If MP4 (recommended)</th></tr>
+<tr><td>Duration</td><td>30s max (file size)</td><td>45-60s (GitHub renders MP4 too)</td></tr>
+<tr><td>Resolution</td><td>800px wide</td><td>1280px wide</td></tr>
+<tr><td>File size</td><td>&lt;5MB (GitHub limit)</td><td>&lt;10MB</td></tr>
+<tr><td>Text readability</td><td>Poor at GIF compression</td><td>Good — Acts 4+5 need legible text</td></tr>
+<tr><td>README embed</td><td><code>&lt;img src="docs/demo.gif"&gt;</code></td><td><code>&lt;video src="docs/demo.mp4" autoplay muted loop&gt;</code> (or link to YouTube/Loom)</td></tr>
+</table>
+
+<div class="yellow block">
+<strong>Recommendation: MP4 over GIF.</strong> Acts 4 and 5 require the viewer to READ text (pattern names, gap recommendations, efficiency numbers). GIF compression at 800px makes 13px terminal text illegible. An MP4 at 1280px keeps the report readable — and that's the whole point. GitHub README renders <code>&lt;video&gt;</code> tags and also supports linking to YouTube/Loom.<br><br>
+If GIF is required (e.g., for awesome-list PRs that don't render video), create a shorter 15s version: prompt → table building → final artboard + report summary overlay. Use the MP4 as the primary demo.
+</div>
+
+<div class="green block">
+<strong>README placement:</strong> Replace the <code>&lt;!-- TODO: GIF --&gt;</code> comment at line 34 of README.md with:<br><br>
+<strong>MP4:</strong><br>
+<code>&lt;video src="https://github.com/miapre/mimic-ai/raw/main/docs/demo.mp4" autoplay muted loop playsinline width="800"&gt;&lt;/video&gt;</code><br><br>
+<strong>GIF fallback:</strong><br>
+<code>&lt;img src="docs/demo.gif" alt="Mimic builds your HTML in Figma using your design system — then tells you what your DS is missing" width="800"&gt;</code>
+</div>
+
+<hr>
+
+<h2>Part 5 — Failure Recovery Plan</h2>
+
+<p>If something goes wrong during recording:</p>
+
+<table>
+<tr><th>Failure</th><th>Recovery</th></tr>
+<tr><td>Bridge disconnects</td><td>Stop recording. Restart bridge (<code>npm run bridge</code>). Re-run plugin. Resume from the section that failed.</td></tr>
+<tr><td>Component import times out</td><td>Stop recording. The component key may be stale. Run <code>mimic_discover_ds</code> to refresh. Retry.</td></tr>
+<tr><td>Strict mode violation during build</td><td>This IS the tool working correctly — it stops you from using raw values. If it happens, the orchestrator should find the right DS variable and retry. Don't hide it; it's a feature.</td></tr>
+<tr><td>Table cell text shows "Label"</td><td>Phase 4 catches this. The build should fix it before reporting "done." If it slips through, note it and fix in post — or re-record that section.</td></tr>
+<tr><td>Charts look wrong</td><td>Bar chart is reliable. Donut chart was just fixed (1.3.0). If donut still fails, skip it and crop the GIF to exclude it. A partial demo is better than a broken one.</td></tr>
+<tr><td>Build takes too long</td><td>Edit speed. Real-time build of this page is ~3-5 minutes. At 4x speed that's 45-75 seconds of GIF — crop the middle sections and show prompt → table → report.</td></tr>
+</table>
+
+<hr>
+
+<h2>Part 6 — Dry Run Validation</h2>
+
+<div class="red block">
+<strong>Before recording, do a full dry-run build.</strong> Same HTML, same DS, same page. This catches any issue the recording would hit. Delete the dry-run artboard after validation. The recording build will be the clean one.
+</div>
+
+<h3>Dry-run checklist (all must pass):</h3>
+<ul class="checklist">
+  <li>Header nav component inserts and configures correctly (logo, links, buttons)</li>
+  <li>Badge shows "New — Real-time pipelines in beta" (not default text)</li>
+  <li>Buttons show correct labels (not "Button CTA")</li>
+  <li>Tabs show "Ingestion / Pipelines / Visualization / Alerts" (not default labels)</li>
+  <li>Table header cells show "Feature / Free / Pro / Enterprise"</li>
+  <li>Table cells show actual data (not "Label" or "Olivia Rhye")</li>
+  <li>Input shows placeholder "your@company.com"</li>
+  <li>Footer shows "Dataflow" brand + 3 link columns</li>
+  <li>Bar chart has 12 bars with DS color fills</li>
+  <li>Donut chart renders (3 segments, legend with percentages)</li>
+  <li>validate_ds_compliance returns acceptable compliance (100% on DS components, some violations on primitives is OK)</li>
+  <li>Build report generates with Efficiency section</li>
+  <li>Phase 5 summary shows in terminal</li>
+  <li>Total build time is under 5 minutes</li>
+</ul>
+
+<p><strong>If the dry run passes:</strong> Delete the artboard, start the screen recorder, and do the real build.</p>
+<p><strong>If the dry run fails:</strong> Fix the issue, dry-run again. Do not record until a clean run completes.</p>
+
+<hr>
+<p><em>Script prepared 2026-04-23. For the Dataflow landing page demo using Untitled UI PRO STYLES.</em></p>
+
+</body>
+</html>

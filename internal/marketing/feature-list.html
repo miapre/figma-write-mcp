@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mimic AI — Complete Feature List</title>
+<style>
+  body { font-family: Inter, -apple-system, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 24px; color: #1a1a1a; line-height: 1.6; }
+  h1 { font-size: 24px; border-bottom: 2px solid #1043cc; padding-bottom: 8px; }
+  h2 { font-size: 18px; margin-top: 36px; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; }
+  h3 { font-size: 15px; margin-top: 20px; color: #1043cc; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  th { text-align: left; padding: 8px 10px; background: #f0f4ff; border-bottom: 2px solid #d0ddff; font-weight: 600; }
+  td { padding: 8px 10px; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; margin-right: 4px; }
+  .p1 { background: #e8eeff; color: #1043cc; }
+  .p2 { background: #ecfdf3; color: #067647; }
+  .p3 { background: #fef0c7; color: #93370d; }
+  .infra { background: #f5f5f5; color: #414651; }
+  hr { border: none; border-top: 1px solid #e5e7eb; margin: 32px 0; }
+  .note { font-size: 12px; color: #717680; }
+</style>
+</head>
+<body>
+
+<h1>Mimic AI — Complete Feature List</h1>
+<p>Version 1.3.1 &nbsp;|&nbsp; 45 tools &nbsp;|&nbsp; 46 quality rules</p>
+<p class="note">Tags: <span class="tag p1">P1 Build</span> <span class="tag p2">P2 Learn</span> <span class="tag p3">P3 DS for AI</span> <span class="tag infra">Infra</span></p>
+
+<hr>
+
+<h2>Pillar 1 — Builds with your design system</h2>
+
+<h3>Core build</h3>
+<table>
+<tr><th>Feature</th><th>What it does</th></tr>
+<tr><td>HTML → Figma</td><td>Takes any HTML (file, URL, or raw markup) and produces a structured Figma artboard using your DS components, tokens, and text styles.</td></tr>
+<tr><td>Vibe design (text → Figma)</td><td>Describe a screen in plain text ("Build a dashboard with metrics and a data table") — Mimic generates a DS-compliant artboard without any HTML input.</td></tr>
+<tr><td>URL rendering</td><td>Give it a URL. Mimic renders the page (including client-side JS via Puppeteer), extracts the HTML, and builds from it. Handles SPAs and auth-gated pages.</td></tr>
+<tr><td>Multi-page HTML</td><td>When the HTML contains multiple views/pages, Mimic lists them and lets you choose which to build. Builds one at a time, learns between each.</td></tr>
+</table>
+
+<h3>DS component usage</h3>
+<table>
+<tr><th>Feature</th><th>What it does</th></tr>
+<tr><td>Mandatory DS discovery</td><td>Before every build, searches the DS for every component type in the HTML (buttons, tabs, badges, table cells, pagination, inputs, page headers, nav, cards, etc.). Produces a component map.</td></tr>
+<tr><td>Real component insertion</td><td>Imports actual DS components by key — not drawn rectangles. Configures variant, size, state, text overrides, icon visibility, semantic colors.</td></tr>
+<tr><td>Component configuration</td><td>Full post-insertion setup: correct variant selected, all text overridden (no "Label" placeholders), icon slots hidden if unused, semantic color properties set, boolean feature toggles configured.</td></tr>
+<tr><td>Component set verification</td><td>When multiple sets have identical variant names (Button vs Button destructive vs Button success), verifies the component SET name, not just the variant.</td></tr>
+<tr><td>Safe primitive fallback</td><td>When the DS has no matching component, builds from primitives using only DS variables. Documents the reason and the search terms used.</td></tr>
+</table>
+
+<h3>DS token binding</h3>
+<table>
+<tr><th>Feature</th><th>What it does</th></tr>
+<tr><td>Color variable binding</td><td>Every fill and stroke bound to DS color variables via <code>setBoundVariableForPaint</code>. Semantic category enforcement: text colors for text, background colors for frames, border colors for strokes, foreground colors for icons.</td></tr>
+<tr><td>Text style binding</td><td>Every text node gets a <code>textStyleId</code> from the DS. No raw fontName, fontSize, fontWeight, lineHeight. The text style is the single source of truth.</td></tr>
+<tr><td>Spacing variable binding</td><td>Every padding, gap, and margin bound to DS spacing variables via <code>setBoundVariable</code>. Bound at creation time, not as a post-build fix pass.</td></tr>
+<tr><td>Radius variable binding</td><td>Every cornerRadius bound to DS radius variables. Bound at creation time.</td></tr>
+<tr><td>Strict mode</td><td><code>dsMode: "strict"</code> — all tools reject raw hex, raw px, and raw font values. Throws <code>DS_STRICT_VIOLATION</code>. Forces DS-only output.</td></tr>
+<tr><td>Permissive mode</td><td><code>dsMode: "permissive"</code> — allows raw fallbacks for component-only DSs without published tokens. Documents gaps in report.</td></tr>
+</table>
+
+<h3>Auto-layout</h3>
+<table>
+<tr><th>Feature</th><th>What it does</th></tr>
+<tr><td>Auto-layout on every frame</td><td>Every content frame uses auto-layout (VERTICAL or HORIZONTAL). Hug or fill — no fixed heights on content. Only the artboard is 1440px FIXED width.</td></tr>
+<tr><td>CSS → Figma layout translation</td><td>Reads the HTML's CSS and maps directly: flex-direction → direction, gap → itemSpacing, padding → padding with DS variables, max-width → Figma maxWidth + parent CENTER, flex:1 → FILL.</td></tr>
+<tr><td>Container fidelity</td><td>Extracts the HTML's container model (max-width, padding, gap, centering) and applies it using DS variables. No side-padding hacks.</td></tr>
+</table>
+
+<h3>Charts</h3>
+<table>
+<tr><th>Feature</th><th>What it does</th></tr>
+<tr><td>Bar charts</td><td>Auto-layout horizontal frame, bars use <code>layoutGrow:1</code> for even distribution, bottom-aligned, DS color fills.</td></tr>
+<tr><td>Donut/pie charts</td><td>Arc geometry with DS color variables per segment. Legend with auto-layout. <code>categoryVariables</code> maps DS colors to data entries.</td></tr>
+<tr><td>Line / scatter / radar</td><td>Supported in code. SVG-based for complex geometry. DS colors for all elements.</td></tr>
+<tr><td>Chart containers</td><td>Auto-layout wrappers (cards, headers, legends) — same rules as any other frame. Only chart geometry (arcs, dots, paths) may use absolute positioning.</td></tr>
+</table>
+
+<h3>Multi-DS support</h3>
+<table>
+<tr><th>Feature</th><th>What it does</th></tr>
+<tr><td>Team/org libraries</td><td>Full support: components, text styles, color/spacing/radius variables. Full DS compliance.</td></tr>
+<tr><td>Community libraries</td><td>Full support with key-based import. Variables discovered via REST API, imported via <code>importVariableByKeyAsync</code>. Components and text styles import normally.</td></tr>
+<tr><td>Component-only DSs</td><td>Supported. Components used where available. Raw values for text/colors/spacing (no tokens exist). Report recommends adding token collections.</td></tr>
+<tr><td>Restyle artboard</td><td>Duplicate an artboard and restyle it with a different color map, font, and radius scale — showing the same layout built for a different DS.</td></tr>
+</table>
+
+<hr>
+
+<h2>Pillar 2 — Reports and learns from every build</h2>
+
+<h3>Build reports</h3>
+<table>
+<tr><th>Feature</th><th>What it does</th></tr>
+<tr><td>Structured build report</td><td>After every build: what was built, which DS components were used, which elements were primitives and why, quality metrics (raw values count), issue log.</td></tr>
+<tr><td>DS gap recommendations</td><td>Reports which components the DS is missing, with evidence: element count, build count, search terms used. Phrased as questions: "Should your DS include a Metric Card?"</td></tr>
+<tr><td>Efficiency section</td><td>Tool call count, cache hits, saved-vs-cold estimate, DS component call savings, per-gap savings projection ("Adding a Metric Card would save ~20 calls/build").</td></tr>
+<tr><td>Compliance audit</td><td><code>validate_ds_compliance</code> post-build: counts raw fills, raw text styles, raw spacing, fixed sizing. Any violation is a build defect.</td></tr>
+<tr><td>HTML or Markdown export</td><td>Reports saved to <code>mimic/reports/</code> as styled HTML or markdown. Shareable with the team.</td></tr>
+<tr><td>Cross-build comparison</td><td>If a similar screen was built before, notes improvements and regressions.</td></tr>
+</table>
+
+<h3>Learning loop</h3>
+<table>
+<tr><th>Feature</th><th>What it does</th></tr>
+<tr><td>Pattern persistence</td><td>Component mappings saved to <code>ds-knowledge.json</code> with confidence levels. Accumulates across builds.</td></tr>
+<tr><td>User correction</td><td>Tell Mimic "that's not the right Badge — use Tag/Neutral" and the mapping updates permanently. Confidence 0.9, supersedes old pattern.</td></tr>
+<tr><td>Auto-promotion</td><td>If the same mapping goes uncorrected for 3 builds, it auto-promotes from CANDIDATE to VERIFIED.</td></tr>
+<tr><td>Configuration recipes</td><td>Remembers HOW to configure a component — which variant, which text overrides, which icon slots to hide. Replays on next build, skipping inspection.</td></tr>
+<tr><td>Warm-cache builds</td><td>Cached patterns validated against live DS before use. Valid matches skip DS search entirely. Invalid matches re-searched.</td></tr>
+<tr><td>Pattern-learned notifications</td><td>After every build: "Learned: button/secondary → Button (md, Secondary gray). Promoted: table/cell-badge (3 builds). Cache: 20 verified."</td></tr>
+<tr><td>DS change detection</td><td>At build start, compares DS against last known state. New components surfaced. Removed components warned. Stale cache invalidated.</td></tr>
+<tr><td>Regression check</td><td>If a previous build used a DS component for an element, this build must too. Using a primitive where a component was used before is flagged.</td></tr>
+<tr><td>Cost reduction curve</td><td>Cold build ~140 calls → warm ~80 → hot ~55. Each build costs less as patterns cache and decisions become instant.</td></tr>
+</table>
+
+<hr>
+
+<h2>Pillar 3 — Prepares your DS for AI (without extra effort)</h2>
+
+<table>
+<tr><th>Feature</th><th>What it does</th></tr>
+<tr><td>Component description suggestions</td><td>Tracks how components are actually used across builds — which variants, in which contexts, for what purpose. Generates descriptions: "Button: Primary action trigger. Used for CTAs (Contained/Primary), secondary actions (Outlined). Sizes: sm for nav, md for forms, lg for hero." Review and add to your library.</td></tr>
+<tr><td>DESIGN.md generation</td><td>Compiles your DS into the open DESIGN.md format: color tokens, typography scale, spacing, radius, component patterns. Machine-readable YAML frontmatter + human-readable usage guidelines. Compatible with Stitch, Cursor, Copilot, generative UI frameworks.</td></tr>
+<tr><td>DS gap tracking (cumulative)</td><td>Gaps maintained across builds in <code>ds-knowledge.json</code>. After 10 builds, Mimic knows exactly which components your DS needs — with usage counts, build counts, and savings estimates.</td></tr>
+<tr><td>Token gap detection</td><td>When a DS has components but no published tokens, reports it: "Your library has no published design tokens. Adding color, spacing, and radius variable collections would enable full token binding and mode support (light/dark)."</td></tr>
+</table>
+
+<hr>
+
+<h2>Infrastructure</h2>
+
+<h3>Architecture</h3>
+<table>
+<tr><th>Feature</th><th>What it does</th></tr>
+<tr><td>MCP server</td><td>45 tools exposed via Model Context Protocol. Works with Claude Code, Cursor, VS Code, Windsurf, JetBrains.</td></tr>
+<tr><td>Local bridge</td><td>HTTP/WebSocket bridge between MCP server and Figma plugin. Runs on localhost:3055.</td></tr>
+<tr><td>Figma plugin</td><td>Plugin sandbox executes instructions from the bridge. Handles component import, style application, variable binding.</td></tr>
+<tr><td>DS-agnostic</td><td>Zero hardcoded DS values in code. All DS-specific data comes from runtime discovery. Works with any published Figma library.</td></tr>
+</table>
+
+<h3>Quality governance</h3>
+<table>
+<tr><th>Feature</th><th>What it does</th></tr>
+<tr><td>46 golden rules</td><td>Enforced on every build. DS-first, auto-layout, content fidelity, no UI invention, zero raw values, mandatory discovery, build reports, mandatory stop on failure.</td></tr>
+<tr><td>6-phase build lifecycle</td><td>Phase 0 (Target) → Phase 1 (DS Discovery) → Phase 2 (Style Inventory) → Phase 3 (Build) → Phase 4 (QA) → Phase 5 (Report). Each phase is a gate.</td></tr>
+<tr><td>7 roles</td><td>Platform Architect, Build Engineer, Design QA, DS Integration Engineer, Learning Engineer, Product QA, Marketing. Each owns specific phases and rules.</td></tr>
+<tr><td>Mandatory stop protocol</td><td>Build stops (not silently degrades) when: DS library unreachable, zero components resolved, same error 3 times. Partial report saved.</td></tr>
+</table>
+
+<h3>Privacy and trust</h3>
+<table>
+<tr><th>Feature</th><th>What it does</th></tr>
+<tr><td>Runs locally</td><td>Everything on your machine. Bridge, plugin, MCP server — all localhost.</td></tr>
+<tr><td>No telemetry</td><td>Zero analytics, zero tracking, zero outbound calls except Figma REST API for component keys.</td></tr>
+<tr><td>Open source</td><td>MIT license. Full source on GitHub.</td></tr>
+<tr><td>Design data stays local</td><td>Component names, token values, HTML content — never sent anywhere except Figma's own API.</td></tr>
+</table>
+
+<h3>45 MCP tools</h3>
+<table>
+<tr><th>Category</th><th>Tools</th></tr>
+<tr><td>Status & learning (4)</td><td>mimic_status, mimic_discover_ds, mimic_ai_knowledge_read, mimic_ai_knowledge_write</td></tr>
+<tr><td>DS setup (7)</td><td>figma_preload_styles, figma_preload_variables, figma_discover_library_styles, figma_discover_library_variables, figma_set_session_defaults, figma_list_text_styles, figma_read_variable_values</td></tr>
+<tr><td>Build (7)</td><td>figma_create_frame, figma_create_text, figma_create_rectangle, figma_create_ellipse, figma_create_chart, figma_insert_component, figma_batch</td></tr>
+<tr><td>Edit (11)</td><td>figma_set_component_text, figma_set_text, figma_set_node_fill, figma_set_layout_sizing, figma_set_variant, figma_set_visibility, figma_swap_main_component, figma_replace_component, figma_restyle_artboard, figma_move_node, figma_delete_node</td></tr>
+<tr><td>Inspect & QA (12)</td><td>figma_get_node_props, figma_get_node_children, figma_get_node_parent, figma_get_text_info, figma_get_component_variants, figma_get_selection, figma_select_node, figma_get_page_nodes, figma_get_pages, figma_change_page, figma_validate_ds_compliance, figma_tag_raw_exception</td></tr>
+<tr><td>Rendering & output (4)</td><td>mimic_pipeline_resolve, mimic_render_url, mimic_generate_build_report, mimic_generate_design_md</td></tr>
+</table>
+
+<hr>
+<p><em>Complete feature inventory — v1.3.1, 2026-04-24.</em></p>
+
+</body>
+</html>

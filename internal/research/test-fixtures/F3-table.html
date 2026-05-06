@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>F3 — Data Table</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Inter, system-ui, sans-serif; background: #f9fafb; padding: 40px; }
+
+    .table-container {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      overflow: hidden;
+      max-width: 960px;
+    }
+
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .table-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      padding: 12px 24px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .filter-chip {
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 6px;
+      background: #f3f4f6;
+      color: #374151;
+      border: 1px solid #e5e7eb;
+    }
+
+    .filter-chip.active {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-color: #bfdbfe;
+    }
+
+    .search-input {
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid #e5e7eb;
+      margin-left: auto;
+      min-width: 200px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      font-size: 12px;
+      font-weight: 500;
+      color: #6b7280;
+      text-align: left;
+      padding: 12px 24px;
+      border-bottom: 1px solid #e5e7eb;
+      background: #f9fafb;
+    }
+
+    td {
+      font-size: 14px;
+      color: #111827;
+      padding: 16px 24px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .user-cell {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e5e7eb;
+    }
+
+    .user-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: #111827;
+    }
+
+    .user-email {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .status-badge {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      display: inline-block;
+    }
+
+    .status-active { background: #ecfdf5; color: #065f46; }
+    .status-pending { background: #fffbeb; color: #92400e; }
+    .status-inactive { background: #f3f4f6; color: #6b7280; }
+
+    .role-badge {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .pagination {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 24px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .pagination-info {
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .pagination-controls {
+      display: flex;
+      gap: 4px;
+    }
+
+    .page-btn {
+      font-size: 14px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      background: #ffffff;
+      color: #374151;
+    }
+
+    .page-btn.active {
+      background: #f9fafb;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="table-container">
+    <div class="table-header">
+      <h3 class="table-title">Team members</h3>
+      <button class="btn-primary" style="font-size:14px;font-weight:500;padding:8px 16px;border-radius:8px;background:#2563eb;color:#fff;border:none;">Add member</button>
+    </div>
+
+    <div class="filter-bar">
+      <span class="filter-chip active">All</span>
+      <span class="filter-chip">Active</span>
+      <span class="filter-chip">Pending</span>
+      <span class="filter-chip">Inactive</span>
+      <input type="text" class="search-input" placeholder="Search members...">
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Status</th>
+          <th>Role</th>
+          <th>Department</th>
+          <th>Last active</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="user-cell"><div class="avatar"></div><div><div class="user-name">Sarah Chen</div><div class="user-email">sarah@company.com</div></div></div></td>
+          <td><span class="status-badge status-active">Active</span></td>
+          <td><span class="role-badge">Admin</span></td>
+          <td>Engineering</td>
+          <td>2 hours ago</td>
+        </tr>
+        <tr>
+          <td><div class="user-cell"><div class="avatar"></div><div><div class="user-name">Marcus Johnson</div><div class="user-email">marcus@company.com</div></div></div></td>
+          <td><span class="status-badge status-active">Active</span></td>
+          <td><span class="role-badge">Member</span></td>
+          <td>Design</td>
+          <td>5 hours ago</td>
+        </tr>
+        <tr>
+          <td><div class="user-cell"><div class="avatar"></div><div><div class="user-name">Aisha Patel</div><div class="user-email">aisha@company.com</div></div></div></td>
+          <td><span class="status-badge status-pending">Pending</span></td>
+          <td><span class="role-badge">Member</span></td>
+          <td>Product</td>
+          <td>Invited Apr 15</td>
+        </tr>
+        <tr>
+          <td><div class="user-cell"><div class="avatar"></div><div><div class="user-name">Tom Eriksson</div><div class="user-email">tom@company.com</div></div></div></td>
+          <td><span class="status-badge status-active">Active</span></td>
+          <td><span class="role-badge">Admin</span></td>
+          <td>Engineering</td>
+          <td>1 day ago</td>
+        </tr>
+        <tr>
+          <td><div class="user-cell"><div class="avatar"></div><div><div class="user-name">Lin Wei</div><div class="user-email">lin@company.com</div></div></div></td>
+          <td><span class="status-badge status-inactive">Inactive</span></td>
+          <td><span class="role-badge">Viewer</span></td>
+          <td>Marketing</td>
+          <td>2 weeks ago</td>
+        </tr>
+        <tr>
+          <td><div class="user-cell"><div class="avatar"></div><div><div class="user-name">Rachel Torres</div><div class="user-email">rachel@company.com</div></div></div></td>
+          <td><span class="status-badge status-active">Active</span></td>
+          <td><span class="role-badge">Member</span></td>
+          <td>Design</td>
+          <td>3 hours ago</td>
+        </tr>
+        <tr>
+          <td><div class="user-cell"><div class="avatar"></div><div><div class="user-name">David Kim</div><div class="user-email">david@company.com</div></div></div></td>
+          <td><span class="status-badge status-active">Active</span></td>
+          <td><span class="role-badge">Member</span></td>
+          <td>Engineering</td>
+          <td>30 minutes ago</td>
+        </tr>
+        <tr>
+          <td><div class="user-cell"><div class="avatar"></div><div><div class="user-name">Fatima Al-Said</div><div class="user-email">fatima@company.com</div></div></div></td>
+          <td><span class="status-badge status-pending">Pending</span></td>
+          <td><span class="role-badge">Member</span></td>
+          <td>Product</td>
+          <td>Invited Apr 18</td>
+        </tr>
+        <tr>
+          <td><div class="user-cell"><div class="avatar"></div><div><div class="user-name">James O'Brien</div><div class="user-email">james@company.com</div></div></div></td>
+          <td><span class="status-badge status-active">Active</span></td>
+          <td><span class="role-badge">Admin</span></td>
+          <td>Engineering</td>
+          <td>1 hour ago</td>
+        </tr>
+        <tr>
+          <td><div class="user-cell"><div class="avatar"></div><div><div class="user-name">Yuki Tanaka</div><div class="user-email">yuki@company.com</div></div></div></td>
+          <td><span class="status-badge status-inactive">Inactive</span></td>
+          <td><span class="role-badge">Viewer</span></td>
+          <td>Marketing</td>
+          <td>1 month ago</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="pagination">
+      <span class="pagination-info">Showing 1-10 of 48 members</span>
+      <div class="pagination-controls">
+        <button class="page-btn">Previous</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <button class="page-btn">Next</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

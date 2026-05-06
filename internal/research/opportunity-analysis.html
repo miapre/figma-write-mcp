@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mimic AI — Opportunity Analysis</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', -apple-system, sans-serif; background: #fafafa; color: #1a1a1a; padding: 40px; max-width: 1200px; margin: 0 auto; }
+h1 { font-size: 28px; margin-bottom: 8px; }
+h2 { font-size: 20px; margin: 32px 0 16px; padding-bottom: 8px; border-bottom: 2px solid #e5e7eb; }
+h3 { font-size: 16px; margin: 20px 0 8px; }
+p, li { font-size: 14px; line-height: 1.7; color: #374151; }
+.subtitle { font-size: 14px; color: #666; margin-bottom: 32px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; }
+.card h3 { margin-top: 0; }
+.tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; margin-right: 4px; }
+.tag-green { background: #D1FAE5; color: #065F46; }
+.tag-yellow { background: #FEF3C7; color: #92400E; }
+.tag-blue { background: #DBEAFE; color: #1E40AF; }
+.tag-purple { background: #EDE9FE; color: #5B21B6; }
+.tag-red { background: #FEE2E2; color: #991B1B; }
+.insight { background: #F0FDF4; border-left: 4px solid #22C55E; padding: 16px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+.warning { background: #FEF3C7; border-left: 4px solid #F59E0B; padding: 16px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+th { text-align: left; padding: 10px 12px; background: #F9FAFB; border-bottom: 2px solid #E5E7EB; font-weight: 600; }
+td { padding: 10px 12px; border-bottom: 1px solid #F3F4F6; vertical-align: top; }
+.status-green { color: #059669; font-weight: 600; }
+.status-yellow { color: #D97706; font-weight: 600; }
+.status-red { color: #DC2626; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>Mimic AI — Opportunity Analysis</h1>
+<p class="subtitle">What Mimic can be, what it can do, and what's real vs what needs building. Research-backed.</p>
+
+<h2>Market context (from research)</h2>
+
+<div class="grid">
+<div class="card">
+<h3>The DS adoption problem</h3>
+<p><strong>Only 40% of design systems remain active beyond 18 months.</strong> The hardest part isn't creation — it's adoption. Teams invest time and budget, launch with excitement, then the system becomes a source of confusion and friction.</p>
+<p style="margin-top:8px"><strong>Mimic's angle:</strong> Makes using the DS easier than NOT using it. When the fastest way to get a screen in Figma is through Mimic, the DS gets used by default.</p>
+</div>
+<div class="card">
+<h3>The AI design tool explosion</h3>
+<p><strong>Figma Make</strong> generates designs from prompts using your library. <strong>Google Stitch</strong> generates concepts from text/images (350 free/month). The market split: Stitch dominates 0-to-1 ideation, Figma dominates 1-to-100 refinement.</p>
+<p style="margin-top:8px"><strong>Mimic's angle:</strong> Neither tool learns your conventions. Neither audits your DS. Neither remembers corrections. Mimic is the layer that makes YOUR DS the foundation for all of them.</p>
+</div>
+<div class="card">
+<h3>Generative UI is production-ready</h3>
+<p>Interfaces assembled at runtime from component libraries. Three patterns: static (agent selects predefined components), declarative (A2UI/Open-JSON-UI specs), open-ended. All depend on <strong>components with descriptions, semantic roles, and structured metadata.</strong></p>
+<p style="margin-top:8px"><strong>Mimic's angle:</strong> Most DS components have no descriptions. Mimic's usage data provides the foundation for writing them. Well-described components = better generative UI output.</p>
+</div>
+<div class="card">
+<h3>The Stitch → Figma workflow</h3>
+<p>The recommended 2026 workflow: <strong>"Start in Stitch → narrow concepts → export to Figma → apply your actual design system."</strong> Stitch even supports importing DESIGN.md for brand consistency.</p>
+<p style="margin-top:8px"><strong>Mimic's angle:</strong> Stitch generates HTML concepts. Mimic translates HTML → Figma using your DS. This is a natural pipeline. Stitch ideates, Mimic applies the DS.</p>
+</div>
+</div>
+
+<h2>Full opportunity map</h2>
+
+<p>Every capability Mimic can offer, what it requires, and how to talk about it to designers.</p>
+
+<table>
+<tr>
+<th style="width:25%">Capability</th>
+<th style="width:10%">Status</th>
+<th style="width:30%">How it works (for designers)</th>
+<th style="width:20%">How to mention it</th>
+<th style="width:15%">Trending topics it connects to</th>
+</tr>
+
+<tr>
+<td><strong>A. HTML → Figma with your DS</strong><br><span class="tag tag-green">Core</span></td>
+<td class="status-green">Ships today</td>
+<td>Give Mimic any HTML. It searches your library, matches components and tokens, builds the equivalent in Figma with auto-layout and real variable bindings.</td>
+<td>Lead with this. The core value prop.</td>
+<td>Design-to-code parity, AI-assisted design</td>
+</tr>
+
+<tr>
+<td><strong>B. Vibe design</strong><br><span class="tag tag-purple">Differentiator</span></td>
+<td class="status-green">Works today</td>
+<td>Describe what you want in plain language: "Build a system dashboard with user metrics and a data table." The AI interprets your request and Mimic builds it using your DS components and tokens.</td>
+<td>"Describe a screen. Get a design. Built entirely from your design system."</td>
+<td>Vibe coding, AI-powered design, prompt-to-design</td>
+</tr>
+
+<tr>
+<td><strong>C. DS audit / build reports</strong><br><span class="tag tag-blue">Learning</span></td>
+<td class="status-yellow">Protocol exists, needs end-to-end demo</td>
+<td>After every build, Mimic reports: what DS components it used, what it built from scratch and why, what patterns it learned, and what your DS is missing. Recommendations as questions: "Should your DS include a Tab component?" Save as HTML or markdown — shareable with your team.</td>
+<td>"Every build is a DS review." + "DS maintenance on autopilot."</td>
+<td>DS governance, design ops, DS adoption metrics</td>
+</tr>
+
+<tr>
+<td><strong>D. DS adoption driver</strong><br><span class="tag tag-green">Core</span></td>
+<td class="status-green">Ships today</td>
+<td>When the fastest way to get a screen in Figma is through Mimic, the DS gets used by default. No enforcement meetings. No Slack reminders. The tool makes compliance the path of least resistance.</td>
+<td>"Makes using your DS easier than not using it."</td>
+<td>DS adoption (40% failure rate), design system governance</td>
+</tr>
+
+<tr>
+<td><strong>E. Component documentation from usage</strong><br><span class="tag tag-blue">Learning</span></td>
+<td class="status-yellow">Data exists, workflow not built</td>
+<td>Mimic tracks how each component gets used — which variants, in which contexts, how often. A Button used 40 times as a primary CTA across 12 builds? That's a description writing itself. Mimic can suggest descriptions based on observed usage patterns.</td>
+<td>"Mimic helps you document your DS based on how it's actually used."</td>
+<td>Generative UI readiness, Figma Make, AI-ready DS</td>
+</tr>
+
+<tr>
+<td><strong>F. DESIGN.md generation</strong><br><span class="tag tag-blue">Learning</span></td>
+<td class="status-yellow">Infrastructure exists, handler not built</td>
+<td>A structured reference file documenting your DS: components, tokens, variants, usage patterns. Stitch already imports DESIGN.md for brand consistency. Any AI tool that reads this file can generate on-brand output.</td>
+<td>"Mimic generates a structured reference for your DS that AI tools can read — so Stitch, Figma Make, and generative UI tools all speak your design system's language."</td>
+<td>AI-ready design systems, Stitch DESIGN.md import, generative UI</td>
+</tr>
+
+<tr>
+<td><strong>G. Stitch → DS bridge</strong><br><span class="tag tag-purple">Differentiator</span></td>
+<td class="status-green">Works today</td>
+<td>Stitch generates HTML concepts from prompts. Mimic translates that HTML into Figma using your actual DS. Stitch ideates, Mimic applies the system. The recommended 2026 workflow — automated.</td>
+<td>"Stitch generates concepts. Mimic makes them yours."</td>
+<td>Stitch workflow, AI ideation → DS refinement</td>
+</tr>
+
+<tr>
+<td><strong>H. DS maturity tracking</strong><br><span class="tag tag-blue">Learning</span></td>
+<td class="status-yellow">Data exists, dashboard not built</td>
+<td>Quantified metrics from build data: component coverage %, token coverage %, typography coverage %. Trend over time — is your DS getting more complete or drifting? Data-driven answer to "how mature is our system?"</td>
+<td>"Mimic gives you numbers, not opinions, about your DS health."</td>
+<td>Design ops, DS metrics, adoption measurement</td>
+</tr>
+
+<tr>
+<td><strong>I. Generative UI readiness</strong><br><span class="tag tag-purple">Positioning</span></td>
+<td class="status-yellow">Enrichment path, not a feature</td>
+<td>Generative UI needs components with descriptions, semantic roles, and metadata. Most DS aren't there. Mimic's usage tracking + documentation suggestions help designers prepare their DS for generative UI — without learning what generative UI technically requires.</td>
+<td>"Prepare your DS for generative UI — without learning what that means."</td>
+<td>Generative UI, A2UI, AI-powered interfaces</td>
+</tr>
+
+<tr>
+<td><strong>J. DS migration / comparison</strong><br><span class="tag tag-green">Core</span></td>
+<td class="status-green">Works today</td>
+<td>Build the same HTML with two different design systems. Compare the results side by side. See exactly where DS B has gaps compared to DS A before you commit to a migration.</td>
+<td>"Same screen, different DS. Compare before you migrate."</td>
+<td>DS evolution, white-labeling, rebranding</td>
+</tr>
+
+<tr>
+<td><strong>K. DS compliance audit</strong><br><span class="tag tag-green">Core</span></td>
+<td class="status-green">Ships today</td>
+<td>After every build, Mimic checks: how many text nodes use text styles vs raw fonts, how many fills use variables vs hardcoded values, how many frames use auto-layout vs fixed positioning. Quantified compliance.</td>
+<td>"Find every hardcoded value and rogue component — automatically."</td>
+<td>Design-code parity, DS governance, adoption metrics</td>
+</tr>
+</table>
+
+<h2>What needs building (prioritized)</h2>
+
+<div class="warning">
+<strong>Before any of the "yellow" items ship, the "green" items must be demonstrated end-to-end.</strong> Build reports (C) are promised in the README and have never been shown to a user. This is the #1 gap.
+</div>
+
+<table>
+<tr><th>Priority</th><th>What</th><th>Effort</th><th>Impact</th></tr>
+<tr>
+<td>1</td>
+<td><strong>Phase 5 end-to-end</strong> — build reports, pattern-learned notifications, save offer. The protocol exists. Execute it once properly.</td>
+<td>Low — orchestration, not code</td>
+<td>Proves the learning loop. Everything else depends on this.</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>DESIGN.md generator</strong> — compile DS inventory + usage patterns into a structured file. Stitch already reads DESIGN.md.</td>
+<td>Medium — handler that reads discover_ds + knowledge file and outputs structured markdown</td>
+<td>High — connects Mimic to the Stitch/generative UI ecosystem. Tangible artifact designers can share.</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Component description suggestions</strong> — from usage data, draft "this Button is used for primary CTAs in dashboard screens."</td>
+<td>Low — AI reads knowledge file, generates descriptions. No plugin work needed.</td>
+<td>High — direct improvement to Figma Make and generative UI output quality.</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>DS maturity metrics in build reports</strong> — component coverage %, token coverage %, trend line.</td>
+<td>Low — data already collected by validate_ds_compliance</td>
+<td>Medium — gives DS leads quantified health metrics.</td>
+</tr>
+</table>
+
+<h2>How to mention each in the README</h2>
+
+<div class="insight">
+<strong>The rule:</strong> Only mention capabilities that work today OR have clear infrastructure. Never promise vapor. For "yellow" items, frame as outcomes ("Mimic helps you get there") not as features ("Mimic generates X").
+</div>
+
+<h3>Sections to include in README:</h3>
+
+<ol style="margin-left:20px; margin-top:12px;">
+<li style="margin-bottom:12px"><strong>Opening</strong> — Core value: HTML → Figma with your DS. Learning hook. (Done)</li>
+<li style="margin-bottom:12px"><strong>It learns</strong> — Corrections stick, DS changes detected, build reports, DS maintenance on autopilot, component documentation from usage. (Mostly done)</li>
+<li style="margin-bottom:12px"><strong>Vibe design</strong> — Describe a screen, get a DS-compliant design. (Done)</li>
+<li style="margin-bottom:12px"><strong>Prepare your DS for what's coming</strong> — Figma Make, Stitch, generative UI all need well-described components. Mimic tracks usage → enriches documentation → your DS works better for all these tools. Stitch imports DESIGN.md; Mimic can generate it. (Needs refinement)</li>
+<li style="margin-bottom:12px"><strong>What other tools get wrong</strong> — Comparison table. (Done)</li>
+<li style="margin-bottom:12px"><strong>Works with any DS</strong> — Compatibility table. (Done)</li>
+</ol>
+
+<h2>Trending topics to reference</h2>
+
+<table>
+<tr><th>Topic</th><th>How Mimic connects</th><th>How to mention (designer-friendly)</th></tr>
+<tr>
+<td>Generative UI</td>
+<td>Needs well-described, semantically structured components. Mimic's usage data helps create those descriptions.</td>
+<td>"Generative UI is coming — interfaces that assemble themselves from your components. They only work when your DS is well-documented. Mimic helps you get there."</td>
+</tr>
+<tr>
+<td>Figma Make</td>
+<td>Picks components by description. Better descriptions = better output. Mimic tracks usage to inform descriptions.</td>
+<td>"Figma Make picks your components based on their descriptions. Mimic helps you write better ones — based on how they're actually used."</td>
+</tr>
+<tr>
+<td>Google Stitch</td>
+<td>Generates HTML concepts. Imports DESIGN.md for brand consistency. Mimic translates Stitch output → DS-compliant Figma.</td>
+<td>"Stitch generates concepts fast. Mimic makes them yours — built with your real components and tokens."</td>
+</tr>
+<tr>
+<td>Vibe coding / vibe design</td>
+<td>Describe what you want, get a result. Mimic does this with your DS.</td>
+<td>"Like vibe coding, but the output is a real Figma file built from your design system."</td>
+</tr>
+<tr>
+<td>DS adoption (40% failure rate)</td>
+<td>Mimic makes the DS the path of least resistance. Adoption happens by default.</td>
+<td>"The fastest way to get a screen in Figma is through Mimic. Your DS gets used because it's easier, not because it's mandated."</td>
+</tr>
+<tr>
+<td>Design ops / DS governance</td>
+<td>Build reports provide quantified compliance data. DS maturity tracking over time.</td>
+<td>"Every build reports what's compliant and what's not. Over time, you have a complete picture of your DS health."</td>
+</tr>
+<tr>
+<td>AI-ready design systems</td>
+<td>Token-first thinking, component descriptions, structured metadata. Mimic enforces tokens and tracks usage.</td>
+<td>"AI tools need your DS to be well-structured. Mimic builds that way by default — and shows you where the gaps are."</td>
+</tr>
+</table>
+
+<h2>Validation: what can Mimic ACTUALLY do?</h2>
+
+<table>
+<tr><th>Claim in README</th><th>Can it do it?</th><th>Evidence / Gap</th></tr>
+<tr><td>HTML → Figma with DS components and tokens</td><td class="status-green">YES</td><td>3 verified builds (MUI, HeroUI x2)</td></tr>
+<tr><td>Correct it once, remembers forever</td><td class="status-green">YES</td><td>Knowledge file with user_correction trigger</td></tr>
+<tr><td>DS change detection</td><td class="status-green">YES</td><td>Phase 1 comparison at build start</td></tr>
+<tr><td>Build reports after every build</td><td class="status-yellow">PROTOCOL EXISTS</td><td>Format defined, never executed end-to-end</td></tr>
+<tr><td>Vibe design (describe → build)</td><td class="status-green">YES</td><td>AI interprets, Mimic builds with DS</td></tr>
+<tr><td>Works with community libraries</td><td class="status-green">YES</td><td>MUI + HeroUI verified</td></tr>
+<tr><td>46 quality rules on every build</td><td class="status-green">YES</td><td>validate_ds_compliance + inline warnings</td></tr>
+<tr><td>DS enrichment / component descriptions</td><td class="status-yellow">DATA EXISTS</td><td>Usage patterns in knowledge file. No dedicated workflow.</td></tr>
+<tr><td>DESIGN.md generation</td><td class="status-red">NOT BUILT</td><td>Infrastructure (discover_ds, read_variable_values) exists. No compiler.</td></tr>
+<tr><td>Figma Make / Stitch integration</td><td class="status-green">YES (indirect)</td><td>Stitch outputs HTML → Mimic translates. No direct integration needed.</td></tr>
+<tr><td>Generative UI readiness</td><td class="status-yellow">POSITIONING</td><td>Accurate framing. Mimic helps get there, doesn't do it directly.</td></tr>
+<tr><td>DS maturity metrics</td><td class="status-yellow">DATA EXISTS</td><td>validate_ds_compliance collects the data. No aggregation/trending.</td></tr>
+</table>
+
+</body>
+</html>

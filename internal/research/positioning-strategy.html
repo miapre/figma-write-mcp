@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mimic AI — Positioning Strategy</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', -apple-system, sans-serif; background: #f5f5f5; color: #1a1a1a; padding: 40px; }
+h1 { font-size: 32px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+.subtitle { text-align: center; font-size: 14px; color: #666; margin-bottom: 32px; background: #333; color: #fff; padding: 10px; border-radius: 8px; }
+.row-label { font-size: 14px; font-weight: 700; color: #333; padding: 16px 12px; vertical-align: middle; width: 140px; text-align: right; line-height: 1.4; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 40px; }
+th { font-size: 13px; font-weight: 700; padding: 10px 12px; text-align: center; }
+td { padding: 8px; vertical-align: top; }
+.header-yellow { background: #FFF3CD; color: #856404; border: 1px solid #FFE69C; }
+.header-purple { background: #D8C4F0; color: #4A1D96; border: 1px solid #C4A8E0; }
+.header-green { background: #C3E6CB; color: #155724; border: 1px solid #A3D9B1; }
+.header-red { background: #F8D7DA; color: #721C24; border: 1px solid #F5C6CB; }
+.note { display: inline-block; padding: 8px 10px; border-radius: 4px; font-size: 12px; line-height: 1.4; margin: 3px; max-width: 160px; vertical-align: top; }
+.note-blue { background: #7DD3FC; color: #0C4A6E; }
+.note-yellow { background: #FDE68A; color: #78350F; }
+.note-green { background: #A7F3D0; color: #064E3B; }
+.note-purple { background: #C4B5FD; color: #3B0764; }
+.note-pink { background: #FBCFE8; color: #831843; }
+.note-orange { background: #FED7AA; color: #7C2D12; }
+.section-divider { height: 2px; background: #ddd; margin: 4px 0; }
+td.notes-cell { min-height: 80px; }
+</style>
+</head>
+<body>
+
+<h1>Mimic AI — Positioning Strategy</h1>
+<div class="subtitle">Positioning Strategy Summary</div>
+
+<!-- ROW 1: What is it & Who is it for? -->
+<table>
+<tr>
+  <td class="row-label"></td>
+  <th class="header-yellow">Target Company Type</th>
+  <th class="header-yellow">Target Department</th>
+  <th class="header-purple">Product Category</th>
+  <th class="header-yellow">Primary Use Case</th>
+</tr>
+<tr>
+  <td class="row-label">What is it &<br>Who is it for?</td>
+  <td class="notes-cell">
+    <span class="note note-blue">Product companies with published design systems</span>
+    <span class="note note-blue">Design agencies building client UIs</span>
+    <span class="note note-blue">Startups to enterprise — any team that maintains a Figma DS library</span>
+  </td>
+  <td class="notes-cell">
+    <span class="note note-blue">Design systems teams</span>
+    <span class="note note-blue">Product designers</span>
+    <span class="note note-blue">Design engineers / frontend devs who work in Figma</span>
+  </td>
+  <td class="notes-cell">
+    <span class="note note-purple">Design system copilot</span>
+    <span class="note note-purple">AI-powered HTML-to-Figma translator</span>
+    <span class="note note-purple">DS audit and learning tool</span>
+  </td>
+  <td class="notes-cell">
+    <span class="note note-blue">Translate any HTML prototype into Figma using the team's real design system — components, tokens, auto-layout</span>
+  </td>
+</tr>
+</table>
+
+<table>
+<tr>
+  <td class="row-label"></td>
+  <th class="header-yellow">Competitive Alternative</th>
+  <th class="header-yellow">Problem Summary</th>
+  <th class="header-purple" colspan="2">Differentiation Summary</th>
+</tr>
+<tr>
+  <td class="row-label">What does it replace<br>& Why is it better?</td>
+  <td class="notes-cell">
+    <span class="note note-blue">Manual Figma building (the status quo)</span>
+    <span class="note note-blue">Generic AI tools (Figma Make, Cursor + Figma MCP, Claude + Figma MCP without Mimic)</span>
+    <span class="note note-blue">Screenshot-to-design tools (html.to" design, Locofy)</span>
+  </td>
+  <td class="notes-cell">
+    <span class="note note-yellow">Building screens in Figma is manual, repetitive, and disconnected from the DS</span>
+    <span class="note note-yellow">AI tools generate static frames with hardcoded values — full cleanup still needed</span>
+    <span class="note note-yellow">No tool learns your DS conventions — every build starts from zero</span>
+  </td>
+  <td class="notes-cell" colspan="2">
+    <span class="note note-purple">Mimic uses your REAL design system — published components, text styles, color/spacing/radius variables. Every element is traceable to a DS asset.</span>
+    <span class="note note-purple">It learns: corrections become permanent rules, patterns auto-verify after 3 builds, knowledge compounds over time. No other tool does this.</span>
+    <span class="note note-purple">It audits: every build reports what your DS is missing — gaps surface as questions, not demands. Mimic is a DS reviewer, not just a builder.</span>
+  </td>
+</tr>
+</table>
+
+<!-- ROW 3: Main Arguments -->
+<table>
+<tr>
+  <td class="row-label"></td>
+  <th class="header-green">Competitive alternative<br>(details)</th>
+  <th class="header-pink" style="background:#F8D7DA;color:#721C24;border:1px solid #F5C6CB;">Why that sucks<br>(problems)</th>
+  <th class="header-purple">How we do it differently<br>(capabilities &nbsp;|&nbsp; features)</th>
+  <th class="header-green">Why it's better<br>(benefits)</th>
+</tr>
+
+<!-- Alternative 1: Manual Figma building -->
+<tr>
+  <td class="row-label" style="font-size:12px">Main<br>Arguments</td>
+  <td class="notes-cell">
+    <span class="note note-blue">Manual Figma building</span>
+  </td>
+  <td class="notes-cell">
+    <span class="note note-pink">Slow — building a landing page takes hours</span>
+    <span class="note note-pink">Inconsistent — each designer applies the DS differently</span>
+    <span class="note note-pink">DS knowledge doesn't transfer — new team members start from scratch</span>
+    <span class="note note-pink">No feedback loop — you never know what's missing from the DS until someone asks</span>
+  </td>
+  <td class="notes-cell">
+    <span class="note note-purple">One prompt builds a full screen in minutes, not hours</span>
+    <span class="note note-purple">Consistent — same component mapping every time, same token binding</span>
+    <span class="note note-purple">Knowledge persists — patterns learned once apply to every future build</span>
+    <span class="note note-purple">DS gap reports after every build — surfaces missing components and tokens automatically</span>
+  </td>
+  <td class="notes-cell">
+    <span class="note note-green">10x faster screen production</span>
+    <span class="note note-green">DS consistency across the team without enforcement overhead</span>
+    <span class="note note-green">Your DS improves with every build — gaps become visible</span>
+  </td>
+</tr>
+
+<!-- Alternative 2: Generic AI tools -->
+<tr>
+  <td class="row-label"></td>
+  <td class="notes-cell">
+    <span class="note note-blue">Generic AI tools</span>
+    <span class="note note-blue" style="font-size:11px">(Figma Make, Cursor + Figma MCP, raw Claude + Figma MCP)</span>
+  </td>
+  <td class="notes-cell">
+    <span class="note note-pink">Generate static frames — no auto-layout</span>
+    <span class="note note-pink">Hardcode colors, fonts, spacing — no token binding</span>
+    <span class="note note-pink">Don't know your DS exists — can't use your components</span>
+    <span class="note note-pink">Start fresh every session — no memory of past builds</span>
+    <span class="note note-pink">Output needs full cleanup to be DS-compliant</span>
+  </td>
+  <td class="notes-cell">
+    <span class="note note-purple">Every frame uses auto-layout — resizable, responsive</span>
+    <span class="note note-purple">Every color, font, spacing bound to DS variables</span>
+    <span class="note note-purple">Discovers and imports your DS components at the start of every build</span>
+    <span class="note note-purple">Knowledge file persists across sessions — builds get faster over time</span>
+    <span class="note note-purple">46 automated quality rules — output is DS-compliant on delivery</span>
+  </td>
+  <td class="notes-cell">
+    <span class="note note-green">Output is production-ready — hand it to your team as-is</span>
+    <span class="note note-green">No cleanup pass. No "fix the tokens" step.</span>
+    <span class="note note-green">The tool that actually respects the work you put into your DS</span>
+  </td>
+</tr>
+
+<!-- Alternative 3: Screenshot/HTML-to-Figma tools -->
+<tr>
+  <td class="row-label"></td>
+  <td class="notes-cell">
+    <span class="note note-blue">HTML-to-Figma / screenshot tools</span>
+    <span class="note note-blue" style="font-size:11px">(html.to" design, Locofy, Anima)</span>
+  </td>
+  <td class="notes-cell">
+    <span class="note note-pink">Produce flat layers — no auto-layout, no component structure</span>
+    <span class="note note-pink">Capture visual pixels, not semantic intent</span>
+    <span class="note note-pink">No DS awareness — same output regardless of your library</span>
+    <span class="note note-pink">No learning — rebuild from scratch every time</span>
+    <span class="note note-pink">Result is a "screenshot in Figma" — unusable for design iteration</span>
+  </td>
+  <td class="notes-cell">
+    <span class="note note-purple">Reads semantic HTML structure, not pixel screenshots</span>
+    <span class="note note-purple">Maps HTML elements to your DS components — Button, Badge, Table, not rectangles</span>
+    <span class="note note-purple">Output is structured — real auto-layout, real component instances, real variables</span>
+    <span class="note note-purple">Same HTML + different DS = different output. The DS drives the result.</span>
+    <span class="note note-purple">Learns which component matches which pattern — improves every build</span>
+  </td>
+  <td class="notes-cell">
+    <span class="note note-green">Output is a real Figma design — not a flat import</span>
+    <span class="note note-green">Designers can iterate on it immediately — components are real, tokens are bound</span>
+    <span class="note note-green">Your DS is the lens, not an afterthought</span>
+  </td>
+</tr>
+</table>
+
+<div style="margin-top:40px; padding: 24px; background:#fff; border-radius:12px; border:1px solid #e5e7eb;">
+<h2 style="font-size:18px; margin-bottom:12px;">Key Takeaways for Copy</h2>
+<p style="font-size:14px; line-height:1.7; color:#374151;">
+<strong>Positioning:</strong> "The copilot for your design system" — not an HTML-to-Figma tool, not a screenshot converter, not another AI frame generator. A copilot that uses your real DS and learns over time.<br><br>
+<strong>Hero differentiator:</strong> Learning. No competitor does this. Corrections become rules. Patterns auto-verify. Knowledge compounds. This is the headline.<br><br>
+<strong>Secondary differentiator:</strong> DS compliance on delivery. No cleanup pass. Real components, real tokens, real auto-layout. Output is production-ready.<br><br>
+<strong>Tertiary differentiator:</strong> DS audit. Every build reveals what's missing. Mimic doesn't just build — it reviews your design system.<br><br>
+<strong>Empathy hook:</strong> "You spent months building a design system. Then someone needs a screen in Figma and builds it from scratch." Every DS lead has felt this.<br><br>
+<strong>Category creation:</strong> "Design system copilot" is an unoccupied category. No competitor claims it. Mimic should own this term.
+</p>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dataflow</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'DM Sans', sans-serif; background: #fff; color: #111; }
+
+    .nav { display: flex; justify-content: space-between; align-items: center; padding: 16px 48px; border-bottom: 1px solid #e5e7eb; }
+    .nav-logo { font-size: 18px; font-weight: 600; }
+    .nav-links { display: flex; gap: 24px; font-size: 14px; color: #6b7280; }
+    .nav-actions { display: flex; gap: 8px; }
+
+    .btn-primary { font-size: 14px; font-weight: 500; padding: 10px 18px; border-radius: 8px; background: #7c3aed; color: #fff; border: none; }
+    .btn-secondary { font-size: 14px; font-weight: 500; padding: 10px 18px; border-radius: 8px; background: #fff; color: #344054; border: 1px solid #d0d5dd; }
+
+    .hero { text-align: center; padding: 80px 48px 64px; }
+    .badge { display: inline-block; font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 999px; background: #f5f3ff; color: #6d28d9; margin-bottom: 20px; }
+    .hero h1 { font-size: 48px; font-weight: 700; line-height: 1.1; margin-bottom: 16px; }
+    .hero p { font-size: 18px; color: #6b7280; max-width: 540px; margin: 0 auto 32px; line-height: 1.6; }
+    .hero-buttons { display: flex; justify-content: center; gap: 12px; }
+
+    .metrics { display: flex; justify-content: center; gap: 64px; padding: 48px; background: #f9fafb; border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; }
+    .metric { text-align: center; }
+    .metric-value { font-size: 36px; font-weight: 700; }
+    .metric-label { font-size: 13px; color: #6b7280; margin-top: 4px; }
+
+    .features { padding: 80px 48px; text-align: center; }
+    .features .overline { font-size: 14px; font-weight: 600; color: #7c3aed; margin-bottom: 12px; }
+    .features h2 { font-size: 32px; font-weight: 600; margin-bottom: 12px; }
+    .features .subtitle { font-size: 16px; color: #6b7280; margin-bottom: 40px; }
+    .tabs { display: flex; justify-content: center; gap: 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 40px; }
+    .tab { font-size: 14px; font-weight: 500; padding: 12px 16px; color: #6b7280; border-bottom: 2px solid transparent; }
+    .tab.active { color: #7c3aed; border-bottom-color: #7c3aed; }
+
+    .cards { display: flex; gap: 24px; max-width: 960px; margin: 0 auto; }
+    .card { flex: 1; text-align: left; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; }
+    .card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+    .card p { font-size: 14px; color: #6b7280; line-height: 1.5; margin-bottom: 16px; }
+    .card .stat { font-size: 24px; font-weight: 700; color: #7c3aed; }
+    .card .stat-label { font-size: 12px; color: #9ca3af; }
+
+    .table-section { padding: 80px 48px; background: #f9fafb; }
+    .table-section h2 { font-size: 32px; font-weight: 600; text-align: center; margin-bottom: 12px; }
+    .table-section .subtitle { font-size: 16px; color: #6b7280; text-align: center; margin-bottom: 40px; }
+    .table-wrap { max-width: 900px; margin: 0 auto; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    th { font-size: 13px; font-weight: 600; text-align: left; padding: 14px 24px; border-bottom: 1px solid #e5e7eb; background: #f9fafb; }
+    td { font-size: 14px; padding: 14px 24px; border-bottom: 1px solid #f3f4f6; color: #374151; }
+    td.center, th.center { text-align: center; }
+    .check { color: #059669; font-weight: 600; }
+    .dash { color: #d1d5db; }
+
+    .charts { display: flex; gap: 24px; padding: 0 48px 80px; }
+    .chart-card { flex: 2; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; }
+    .chart-card.small { flex: 1; }
+    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .chart-title { font-size: 14px; font-weight: 600; }
+    .chart-badge { font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 999px; background: #ecfdf5; color: #065f46; }
+    .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 160px; }
+    .bar { flex: 1; border-radius: 4px 4px 0 0; }
+    .bar.brand { background: #7c3aed; }
+    .bar.secondary { background: #a78bfa; }
+    .bar.muted { background: #e5e7eb; }
+    .chart-labels { display: flex; justify-content: space-between; font-size: 11px; color: #9ca3af; margin-top: 8px; }
+    .donut-wrap { display: flex; flex-direction: column; gap: 16px; }
+    .donut { width: 120px; height: 120px; border-radius: 50%; border: 16px solid #e5e7eb; border-top-color: #7c3aed; border-right-color: #a78bfa; border-bottom-color: #059669; margin: 0 auto; }
+    .legend { display: flex; flex-direction: column; gap: 8px; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #6b7280; }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .legend-value { margin-left: auto; font-weight: 600; color: #111; }
+
+    .cta { text-align: center; padding: 80px 48px; }
+    .cta h2 { font-size: 32px; font-weight: 600; margin-bottom: 12px; }
+    .cta p { font-size: 16px; color: #6b7280; margin-bottom: 32px; }
+    .cta-form { display: flex; justify-content: center; gap: 12px; }
+    .cta-input { font-size: 14px; padding: 10px 16px; border: 1px solid #d0d5dd; border-radius: 8px; width: 280px; }
+
+    .footer { border-top: 1px solid #e5e7eb; padding: 48px; display: flex; justify-content: space-between; }
+    .footer-brand { max-width: 240px; }
+    .footer-brand .logo { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+    .footer-brand p { font-size: 13px; color: #9ca3af; line-height: 1.5; }
+    .footer-links { display: flex; gap: 48px; }
+    .footer-col h4 { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+    .footer-col a { display: block; font-size: 13px; color: #6b7280; margin-bottom: 8px; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-logo">Dataflow</div>
+    <div class="nav-links">
+      <span>Product</span>
+      <span>Pricing</span>
+      <span>Docs</span>
+      <span>Changelog</span>
+    </div>
+    <div class="nav-actions">
+      <button class="btn-secondary">Sign in</button>
+      <button class="btn-primary">Start free trial</button>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <span class="badge">New — Real-time pipelines in beta</span>
+    <h1>The analytics platform<br>that scales with you</h1>
+    <p>Ingest, transform, and visualize billions of events. From prototype to production in minutes.</p>
+    <div class="hero-buttons">
+      <button class="btn-primary">Start building free</button>
+      <button class="btn-secondary">View live demo</button>
+    </div>
+  </section>
+
+  <section class="metrics">
+    <div class="metric"><div class="metric-value">12B+</div><div class="metric-label">Events per day</div></div>
+    <div class="metric"><div class="metric-value">99.99%</div><div class="metric-label">Uptime</div></div>
+    <div class="metric"><div class="metric-value">&lt;50ms</div><div class="metric-label">P95 latency</div></div>
+    <div class="metric"><div class="metric-value">3,200+</div><div class="metric-label">Companies</div></div>
+  </section>
+
+  <section class="features">
+    <div class="overline">Capabilities</div>
+    <h2>Built for serious data teams</h2>
+    <p class="subtitle">Everything you need from raw events to production dashboards.</p>
+    <div class="tabs">
+      <span class="tab active">Ingestion</span>
+      <span class="tab">Pipelines</span>
+      <span class="tab">Visualization</span>
+      <span class="tab">Alerts</span>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <h3>Stream processing</h3>
+        <p>Process events in real time with SQL-based transformations. No batch jobs, no waiting.</p>
+        <div class="stat">2.4M</div>
+        <div class="stat-label">events/sec throughput</div>
+      </div>
+      <div class="card">
+        <h3>Schema registry</h3>
+        <p>Auto-detect schemas from incoming data. Version, validate, and evolve without breaking pipelines.</p>
+        <div class="stat">847</div>
+        <div class="stat-label">schemas managed</div>
+      </div>
+      <div class="card">
+        <h3>Instant dashboards</h3>
+        <p>Drag-and-drop charts with sub-second rendering. Share with your team or embed anywhere.</p>
+        <div class="stat">340ms</div>
+        <div class="stat-label">avg render time</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="charts">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Events processed (last 7 days)</div>
+        <span class="chart-badge">↑ 23% vs last week</span>
+      </div>
+      <div class="bar-chart">
+        <div class="bar brand" style="height:45%"></div>
+        <div class="bar secondary" style="height:60%"></div>
+        <div class="bar brand" style="height:55%"></div>
+        <div class="bar secondary" style="height:75%"></div>
+        <div class="bar brand" style="height:65%"></div>
+        <div class="bar muted" style="height:40%"></div>
+        <div class="bar brand" style="height:80%"></div>
+        <div class="bar secondary" style="height:90%"></div>
+        <div class="bar brand" style="height:70%"></div>
+        <div class="bar secondary" style="height:85%"></div>
+        <div class="bar brand" style="height:95%"></div>
+        <div class="bar secondary" style="height:100%"></div>
+      </div>
+      <div class="chart-labels"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+    </div>
+    <div class="chart-card small">
+      <div class="chart-header"><div class="chart-title">By source</div></div>
+      <div class="donut-wrap">
+        <div class="donut"></div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#7c3aed"></div> Web SDK <span class="legend-value">48%</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div> Mobile SDK <span class="legend-value">31%</span></div>
+          <div class="legend-item"><div class="legend-dot" style="background:#059669"></div> Server API <span class="legend-value">21%</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="table-section">
+    <h2>Compare plans</h2>
+    <p class="subtitle">Start free. Upgrade when you need to.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th class="center">Free</th>
+            <th class="center">Pro</th>
+            <th class="center">Enterprise</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Events / month</td><td class="center">10M</td><td class="center">500M</td><td class="center">Unlimited</td></tr>
+          <tr><td>Data sources</td><td class="center">3</td><td class="center">20</td><td class="center">Unlimited</td></tr>
+          <tr><td>Dashboards</td><td class="center">5</td><td class="center">50</td><td class="center">Unlimited</td></tr>
+          <tr><td>Real-time pipelines</td><td class="center"><span class="dash">—</span></td><td class="center"><span class="check">✓</span></td><td class="center"><span class="check">✓</span></td></tr>
+          <tr><td>Team workspaces</td><td class="center"><span class="dash">—</span></td><td class="center"><span class="check">✓</span></td><td class="center"><span class="check">✓</span></td></tr>
+          <tr><td>SSO / SAML</td><td class="center"><span class="dash">—</span></td><td class="center"><span class="dash">—</span></td><td class="center"><span class="check">✓</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="cta">
+    <h2>Start shipping data today</h2>
+    <p>Free tier. No credit card required.</p>
+    <div class="cta-form">
+      <input type="email" class="cta-input" placeholder="your@company.com">
+      <button class="btn-primary">Get started</button>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-brand">
+      <div class="logo">Dataflow</div>
+      <p>Real-time analytics infrastructure for modern data teams.</p>
+    </div>
+    <div class="footer-links">
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a>Features</a><a>Pricing</a><a>Integrations</a><a>Changelog</a>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <a>Documentation</a><a>API Reference</a><a>Status</a><a>Blog</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a>About</a><a>Careers</a><a>Contact</a><a>Legal</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

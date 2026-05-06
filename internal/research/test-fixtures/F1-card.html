@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>F1 — Simple Card</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Inter, system-ui, sans-serif; background: #f9fafb; padding: 40px; }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .badge {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      background: #ecfdf5;
+      color: #065f46;
+    }
+
+    .card-description {
+      font-size: 14px;
+      line-height: 1.5;
+      color: #6b7280;
+    }
+
+    .card-footer {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-primary {
+      font-size: 14px;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-secondary {
+      font-size: 14px;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #374151;
+      border: 1px solid #d1d5db;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Monthly report</h3>
+      <span class="badge">Active</span>
+    </div>
+    <p class="card-description">Your team's performance summary for March 2026. Includes KPIs, sprint velocity, and delivery metrics across all active projects.</p>
+    <div class="card-footer">
+      <button class="btn-primary">View report</button>
+      <button class="btn-secondary">Download</button>
+    </div>
+  </div>
+</body>
+</html>

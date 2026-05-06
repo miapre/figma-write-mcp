@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mimic AI — Strategic Review: Token Economics & Value Communication</title>
+<style>
+  :root {
+    --fg: #181d27;
+    --fg-secondary: #414651;
+    --fg-tertiary: #535862;
+    --bg: #ffffff;
+    --bg-secondary: #fafafa;
+    --bg-tertiary: #f5f5f5;
+    --border: #e9eaeb;
+    --brand: #1043cc;
+    --brand-light: #e8eeff;
+    --success: #079455;
+    --success-light: #ecfdf3;
+    --warning: #dc6803;
+    --warning-light: #fffaeb;
+    --error: #d92d20;
+    --error-light: #fef3f2;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: Inter, -apple-system, system-ui, sans-serif;
+    max-width: 880px; margin: 48px auto; padding: 0 24px;
+    color: var(--fg); line-height: 1.65; background: var(--bg);
+  }
+  h1 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+  .subtitle { color: var(--fg-tertiary); font-size: 14px; margin-bottom: 40px; }
+  h2 {
+    font-size: 18px; font-weight: 700; margin-top: 48px; margin-bottom: 16px;
+    padding-bottom: 8px; border-bottom: 2px solid var(--border);
+  }
+  h3 { font-size: 15px; font-weight: 600; margin-top: 24px; margin-bottom: 8px; }
+  p, li { font-size: 14px; color: var(--fg-secondary); }
+  p { margin-bottom: 12px; }
+  ul, ol { margin: 8px 0 16px 20px; }
+  li { margin: 6px 0; }
+
+  .section-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+    text-transform: uppercase; color: var(--brand); margin-bottom: 4px;
+  }
+
+  .card {
+    background: var(--bg-secondary); border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px; margin: 16px 0;
+  }
+  .card-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0;
+  }
+  .card h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--fg); }
+  .card p { font-size: 13px; margin-bottom: 6px; }
+
+  .verdict {
+    border-left: 3px solid; padding: 12px 16px; margin: 16px 0;
+    border-radius: 0 6px 6px 0; font-size: 13px;
+  }
+  .verdict-problem { background: var(--error-light); border-color: var(--error); }
+  .verdict-opportunity { background: var(--success-light); border-color: var(--success); }
+  .verdict-warning { background: var(--warning-light); border-color: var(--warning); }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+  th {
+    text-align: left; padding: 8px 12px; background: var(--bg-tertiary);
+    border-bottom: 2px solid var(--border); font-weight: 600; font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.03em; color: var(--fg-tertiary);
+  }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+
+  .metric-row {
+    display: flex; gap: 16px; margin: 16px 0;
+  }
+  .metric-box {
+    flex: 1; background: var(--bg-secondary); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px; text-align: center;
+  }
+  .metric-box .value { font-size: 28px; font-weight: 700; color: var(--brand); }
+  .metric-box .label { font-size: 11px; color: var(--fg-tertiary); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
+
+  .tag {
+    display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px;
+    border-radius: 4px; margin-right: 4px;
+  }
+  .tag-now { background: var(--brand-light); color: var(--brand); }
+  .tag-missing { background: var(--error-light); color: var(--error); }
+  .tag-gap { background: var(--warning-light); color: var(--warning); }
+  .tag-ok { background: var(--success-light); color: var(--success); }
+
+  code { font-family: 'SF Mono', Menlo, monospace; font-size: 12px; background: var(--bg-tertiary); padding: 1px 5px; border-radius: 3px; }
+
+  .proposal {
+    background: var(--brand-light); border: 1px solid #a1bbff;
+    border-radius: 8px; padding: 20px; margin: 16px 0;
+  }
+  .proposal h4 { font-size: 14px; font-weight: 700; color: var(--brand); margin-bottom: 8px; }
+  .proposal p { font-size: 13px; color: var(--fg-secondary); }
+  .proposal code { background: #d0ddff; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .footer { font-size: 12px; color: var(--fg-tertiary); margin-top: 48px; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>Mimic AI — Strategic Review</h1>
+<p class="subtitle">Token Economics, Value Communication & Cost Transparency &middot; 2026-04-23</p>
+
+<!-- ============================================================ -->
+<h2>1. The Problem You Identified</h2>
+
+<p>Three things Mimic doesn't do that it should:</p>
+
+<div class="card-grid">
+  <div class="card">
+    <h4>Roles are invisible</h4>
+    <p>7 roles govern every build — but users never see them. The quality engine that makes Mimic different from "paste HTML, get rectangles" is completely hidden.</p>
+  </div>
+  <div class="card">
+    <h4>No cost awareness</h4>
+    <p>Users on a $100/month Claude plan don't know how much a Mimic build costs in tokens or tool calls. They can't predict if they can afford 3 builds or 30.</p>
+  </div>
+  <div class="card">
+    <h4>Savings are invisible</h4>
+    <p>When the cache saves 35 tool calls, nobody knows. When adding a DS component would save 8 calls per build, nobody knows. The learning loop is an <em>economic</em> feature — but it's only framed as a <em>quality</em> feature.</p>
+  </div>
+  <div class="card">
+    <h4>The $100 question</h4>
+    <p>Can someone on a $100/month plan actually use Mimic productively? If not, we're limiting the audience to power users. If yes, we need to prove it.</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>2. Current State Audit</h2>
+
+<p class="section-label">What exists today</p>
+
+<table>
+  <tr><th>Surface</th><th>Token/cost info</th><th>Status</th></tr>
+  <tr>
+    <td>Build reports</td>
+    <td>Total nodes, DS compliance %. No tool call count, no token estimate, no savings.</td>
+    <td><span class="tag tag-missing">Missing</span></td>
+  </tr>
+  <tr>
+    <td>Phase 5 terminal output</td>
+    <td>"X sections built, Y components." No efficiency data.</td>
+    <td><span class="tag tag-missing">Missing</span></td>
+  </tr>
+  <tr>
+    <td>README</td>
+    <td>Mentions learning loop but only as quality feature. Zero economic argument.</td>
+    <td><span class="tag tag-missing">Missing</span></td>
+  </tr>
+  <tr>
+    <td>DS gap recommendations</td>
+    <td>"Should your DS include X?" — No economic impact. Just "seen N times."</td>
+    <td><span class="tag tag-gap">Partial</span></td>
+  </tr>
+  <tr>
+    <td>Pattern-learned notifications</td>
+    <td>"3 patterns learned, 12 from cache." No tool-call savings shown.</td>
+    <td><span class="tag tag-gap">Partial</span></td>
+  </tr>
+  <tr>
+    <td>ROLES.md (Build Engineer)</td>
+    <td>"Tool call count tracked" — but never surfaced to users.</td>
+    <td><span class="tag tag-gap">Spec'd, not shipped</span></td>
+  </tr>
+  <tr>
+    <td>VOICE_AND_TONE.md</td>
+    <td>Mentions "Execution metrics section" in report format — but real reports don't include it.</td>
+    <td><span class="tag tag-gap">Spec'd, not shipped</span></td>
+  </tr>
+</table>
+
+<div class="verdict verdict-problem">
+  <strong>Verdict:</strong> The governance docs spec token tracking. The actual tool doesn't surface any of it. Users see quality outputs but have zero cost visibility.
+</div>
+
+<!-- ============================================================ -->
+<h2>3. Token Economics — The Numbers</h2>
+
+<p class="section-label">What a build actually costs</p>
+
+<p>Mimic builds are tool-call-heavy. Each <code>use_figma</code> call is a round-trip (MCP → bridge → plugin → bridge → MCP). Let's model the cost:</p>
+
+<h3>Tool calls per build (estimated)</h3>
+
+<table>
+  <tr><th>Build stage</th><th>Cold (build 1)</th><th>Warm (build 5+)</th><th>What drives the difference</th></tr>
+  <tr>
+    <td>Phase 0 (target)</td>
+    <td>3-5</td>
+    <td>3-5</td>
+    <td>Same — always needs placement calc</td>
+  </tr>
+  <tr>
+    <td>Phase 1 (discovery)</td>
+    <td>15-25</td>
+    <td>3-8</td>
+    <td><strong>Cache.</strong> Cold: search DS for every component type. Warm: validate cached keys only.</td>
+  </tr>
+  <tr>
+    <td>Phase 2 (styles/vars)</td>
+    <td>10-20</td>
+    <td>5-10</td>
+    <td><strong>Preload.</strong> Batch import known styles vs. discover one-by-one.</td>
+  </tr>
+  <tr>
+    <td>Phase 3 (build)</td>
+    <td>80-150</td>
+    <td>40-80</td>
+    <td><strong>Components vs primitives.</strong> 1 insert_component + set_variant = ~3 calls. Building the same thing from primitives = ~10-15 calls (create_frame × N, create_text × N, set fills, set styles).</td>
+  </tr>
+  <tr>
+    <td>Phase 4 (QA)</td>
+    <td>3-5</td>
+    <td>3-5</td>
+    <td>Same — screenshot + compliance check</td>
+  </tr>
+  <tr>
+    <td>Phase 5 (report)</td>
+    <td>2-4</td>
+    <td>2-4</td>
+    <td>Same — save report + knowledge update</td>
+  </tr>
+  <tr style="font-weight: 700; background: var(--bg-tertiary);">
+    <td>Total</td>
+    <td>~110-210</td>
+    <td>~55-110</td>
+    <td>~50% reduction from learning</td>
+  </tr>
+</table>
+
+<h3>Component vs primitive: the real cost difference</h3>
+
+<div class="card">
+  <h4>Example: 4 metric cards in a dashboard</h4>
+  <table>
+    <tr><th></th><th>As primitives (no DS component)</th><th>With DS component</th></tr>
+    <tr>
+      <td>Per card</td>
+      <td>create_frame (wrapper) + create_frame (content) + create_text (value) + create_text (label) + set fills × 2 + set text styles × 2 = <strong>~8 calls</strong></td>
+      <td>insert_component + set_variant + set_component_text × 2 = <strong>~3 calls</strong></td>
+    </tr>
+    <tr style="font-weight: 700;">
+      <td>× 4 cards</td>
+      <td><strong>32 calls</strong></td>
+      <td><strong>12 calls</strong></td>
+    </tr>
+    <tr>
+      <td>Savings</td>
+      <td colspan="2" style="color: var(--success); font-weight: 600;">20 fewer tool calls per build, every build that has metric cards</td>
+    </tr>
+  </table>
+</div>
+
+<div class="verdict verdict-opportunity">
+  <strong>Key insight:</strong> The learning loop and DS gap recommendations aren't just quality features — they're <strong>economic features</strong>. Every DS component a user adds because Mimic recommended it saves tool calls on every future build. The learning cache saves discovery calls. Both compound.
+</div>
+
+<!-- ============================================================ -->
+<h2>4. About Roles: Should Users See Them?</h2>
+
+<p>Short answer: <strong>No, not as "roles."</strong> Users don't need to know there's a "DS Integration Engineer" or a "Product QA" role. That's internal governance language.</p>
+
+<p>But what roles <em>produce</em> should absolutely be visible — and some of it is already visible, some isn't:</p>
+
+<table>
+  <tr><th>Role output</th><th>Visible to user?</th><th>Verdict</th></tr>
+  <tr>
+    <td>Phase progress (checkboxes)</td>
+    <td><span class="tag tag-ok">Yes</span></td>
+    <td>Good. Keep it.</td>
+  </tr>
+  <tr>
+    <td>Component map (Phase 1)</td>
+    <td><span class="tag tag-ok">Yes</span></td>
+    <td>Good. Users see what matched and what didn't.</td>
+  </tr>
+  <tr>
+    <td>DS gap recommendations</td>
+    <td><span class="tag tag-ok">Yes</span></td>
+    <td>Good but incomplete — needs economic impact (see proposal).</td>
+  </tr>
+  <tr>
+    <td>Pattern-learned notifications</td>
+    <td><span class="tag tag-ok">Yes</span></td>
+    <td>Good but should show savings, not just counts.</td>
+  </tr>
+  <tr>
+    <td>Quality gates (46 rules enforced)</td>
+    <td><span class="tag tag-gap">Partially</span></td>
+    <td>Users see "0 raw hex" but don't know there are 46 checks running. This is a differentiator that's hidden.</td>
+  </tr>
+  <tr>
+    <td>Execution efficiency (tool calls, tokens)</td>
+    <td><span class="tag tag-missing">No</span></td>
+    <td>Specified in ROLES.md. Never shipped.</td>
+  </tr>
+  <tr>
+    <td>Cross-build improvement</td>
+    <td><span class="tag tag-missing">No</span></td>
+    <td>Users don't see "Build 10 was 45% more efficient than Build 1." They should.</td>
+  </tr>
+</table>
+
+<div class="verdict verdict-warning">
+  <strong>The reframe:</strong> Don't surface "roles." Surface what the roles produce — and add the economic dimension that's currently missing. The pitch isn't "we have 7 roles." It's "every build gets faster and cheaper because Mimic learns."
+</div>
+
+<!-- ============================================================ -->
+<h2>5. Proposals</h2>
+
+<p>Three changes. Each adds value communication <strong>without adding tool calls</strong> — they repurpose data Mimic already collects.</p>
+
+<hr>
+
+<div class="proposal">
+  <h4>Proposal A: Efficiency section in build reports</h4>
+  <p>The build report already exists. Add one section. Zero extra tool calls — this is data the Build Engineer already tracks in-memory during the build.</p>
+</div>
+
+<p>Add to every build report (HTML and markdown), after the Quality section:</p>
+
+<pre style="background: var(--bg-tertiary); padding: 16px; border-radius: 6px; font-size: 13px; overflow-x: auto; margin: 12px 0;">
+<code>## Efficiency
+
+| Metric                    | This build | Typical cold build |
+|---------------------------|------------|--------------------|
+| Tool calls (total)        | 67         | ~140               |
+| — from cache              | 22         | 0                  |
+| — saved vs cold           | ~73        | —                  |
+| DS components used        | 8 (saves ~40 primitive calls) |              |
+| Build time                | 4m 12s     | ~8-10m             |
+
+**If your DS added these components, future builds would save:**
+- Metric Card → ~20 calls/build (4 instances × 5 calls saved each)
+- Hero Section → ~12 calls/build (1 instance × 12 calls saved)
+- Feature Card → ~15 calls/build (3 instances × 5 calls saved each)
+Total potential: ~47 fewer calls per build with these 3 components.</code></pre>
+
+<p><strong>Implementation cost:</strong> Zero new tool calls. The Build Engineer already counts <code>use_figma</code> calls. The report generator (<code>mimic_generate_build_report</code>) just needs a new section. Add a <code>toolCallCount</code> and <code>cacheHits</code> field to the report input params.</p>
+
+<hr>
+
+<div class="proposal">
+  <h4>Proposal B: Economic DS gap recommendations</h4>
+  <p>Current gap recommendations say "seen 5 times." Change them to include the cost impact.</p>
+</div>
+
+<p>Current:</p>
+<pre style="background: var(--error-light); padding: 12px; border-radius: 6px; font-size: 13px; margin: 8px 0;">
+<code>card/metric — No Metric/Stat Card component. Built as primitive. (seen 5 times)</code></pre>
+
+<p>Proposed:</p>
+<pre style="background: var(--success-light); padding: 12px; border-radius: 6px; font-size: 13px; margin: 8px 0;">
+<code>card/metric — No Metric Card in your DS. Built as primitive 4 times this build (~32 tool calls).
+With a DS component: ~12 calls. Savings: ~20 calls/build. Seen across 5 builds.</code></pre>
+
+<p><strong>Implementation cost:</strong> Zero. This is text formatting. The data (instance count, calls per primitive) is already known at Phase 5.</p>
+
+<hr>
+
+<div class="proposal">
+  <h4>Proposal C: Efficiency line in Phase 5 terminal output</h4>
+  <p>One line. Added to the existing Phase 5 summary that's already shown.</p>
+</div>
+
+<p>Current Phase 5 output:</p>
+<pre style="background: var(--bg-tertiary); padding: 12px; border-radius: 6px; font-size: 13px; margin: 8px 0;">
+<code>Build complete. 8 sections built.
+DS components: 8 instances (Button, Badge, Input field, Tabs).
+Primitives: 6 sections (metric cards, feature cards, hero, charts, table, footer).
+Full report: mimic/reports/build-2026-04-23-dataflow-final.html</code></pre>
+
+<p>Proposed:</p>
+<pre style="background: var(--success-light); padding: 12px; border-radius: 6px; font-size: 13px; margin: 8px 0;">
+<code>Build complete. 8 sections, 67 tool calls (22 from cache — saved ~73 vs first build).
+DS components: 8 instances (Button, Badge, Input field, Tabs).
+Primitives: 6 sections — adding 3 DS components would save ~47 calls/build.
+Full report: mimic/reports/build-2026-04-23-dataflow-final.html</code></pre>
+
+<p><strong>Implementation cost:</strong> Zero extra tool calls. One counter variable incremented during the build. One line of text at Phase 5.</p>
+
+<hr>
+
+<div class="proposal">
+  <h4>Proposal D: README economics section</h4>
+  <p>Add a section to the README that explains the cost model honestly. This is a competitive differentiator — no other MCP tool does this.</p>
+</div>
+
+<p>Proposed section (after the "Learning" section in the current README):</p>
+
+<pre style="background: var(--bg-tertiary); padding: 16px; border-radius: 6px; font-size: 13px; overflow-x: auto; margin: 12px 0;">
+<code>## Cost & efficiency
+
+Mimic runs on your Claude plan. Every build uses tool calls and tokens.
+The learning loop isn't just about quality — it's about cost.
+
+| Build # | Tool calls | Why |
+|---------|-----------|-----|
+| 1 (cold) | ~140 | Full DS discovery, no cache, all patterns new |
+| 5 (warm) | ~80 | 60% from cache, discovery skipped for known patterns |
+| 10+ (hot) | ~55 | Most decisions cached, components matched instantly |
+
+**What drives cost down:**
+- **Cache**: Every pattern Mimic learns skips a DS search next time
+- **DS components**: 1 component insert = ~3 calls. Same thing as primitives = ~10-15 calls
+- **DS gap recommendations**: When Mimic suggests a component, it's also telling you
+  how to make future builds cheaper
+
+**What you can do:**
+- Add components Mimic recommends → fewer primitive builds → fewer calls
+- Build similar screens in sequence → patterns transfer, cache warms fast
+- Use strict DS mode → fewer QA fix passes → fewer calls
+
+Every build report shows tool call counts and savings.</code></pre>
+
+<p><strong>Why this matters for positioning:</strong> Every other Figma MCP tool is a black box. Users don't know if a build costs 50 calls or 500. Mimic being transparent about cost is a trust signal — and it shows the learning loop has real economic value, not just quality value.</p>
+
+<!-- ============================================================ -->
+<h2>6. What NOT to Add (Zero-Cost Constraint)</h2>
+
+<p>You said it: "ONLY IF ALL THESE DOESN'T SUM EXTRA TOKENS." Here's the constraint analysis:</p>
+
+<table>
+  <tr><th>Proposal</th><th>Extra tool calls</th><th>Extra tokens</th><th>How</th></tr>
+  <tr>
+    <td>A. Report efficiency section</td>
+    <td>0</td>
+    <td>~200 output tokens</td>
+    <td>Counter variable already in memory. Just formatted differently in report generator.</td>
+  </tr>
+  <tr>
+    <td>B. Economic gap recs</td>
+    <td>0</td>
+    <td>~100 output tokens</td>
+    <td>Rephrasing existing text. Same data, different words.</td>
+  </tr>
+  <tr>
+    <td>C. Efficiency line in Phase 5</td>
+    <td>0</td>
+    <td>~50 output tokens</td>
+    <td>One additional line in existing output.</td>
+  </tr>
+  <tr>
+    <td>D. README section</td>
+    <td>0</td>
+    <td>0 (one-time edit)</td>
+    <td>Static documentation. No runtime cost.</td>
+  </tr>
+</table>
+
+<div class="verdict verdict-opportunity">
+  <strong>Total added cost per build:</strong> ~350 output tokens. At Sonnet pricing, that's ~$0.0005 per build. At Opus, ~$0.005. Negligible. The savings from users adding DS components because of better recommendations will dwarf this.
+</div>
+
+<h3>Things to explicitly NOT do:</h3>
+<ul>
+  <li><strong>No per-node token counting.</strong> Walking the tree to count tokens per node would add calls. Not worth it.</li>
+  <li><strong>No real-time cost display during build.</strong> Updating a running counter would add messages. Just show the total at the end.</li>
+  <li><strong>No external API calls for pricing.</strong> Use hardcoded estimates. Claude pricing doesn't change often enough to justify a lookup.</li>
+  <li><strong>No comparison with manual Figma work time.</strong> That's marketing fluff. Stick to tool calls — they're concrete and verifiable.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2>7. The $100/Month Question</h2>
+
+<p>Claude Pro is $20/month (limited). Claude Max is $100/month (5× usage). Claude Team is $30/seat. The question: can Mimic be productive on these plans?</p>
+
+<div class="card">
+  <h4>Back-of-envelope math</h4>
+  <p>A warm Mimic build = ~80 tool calls + ~30K-50K tokens (input context + output). On Claude Max ($100/month), users get ~45 Opus hours or significant Sonnet usage. A single build at warm cache takes ~4-5 minutes of wall time.</p>
+  <p>Conservative estimate: a Max user can run <strong>15-30 builds/month</strong> comfortably alongside normal Claude usage. That's enough for a DS team doing iterative work.</p>
+  <p>On the $20 Pro plan: likely <strong>3-8 builds/month</strong> depending on complexity. Tight, but viable for occasional use — especially once the cache is warm.</p>
+</div>
+
+<div class="verdict verdict-warning">
+  <strong>The honest answer:</strong> Mimic is usable on $100/month, productive on $200/month. The learning loop is the key — it literally makes the tool cheaper over time. The README should be honest about this rather than leaving users to discover it after burning through their quota.
+</div>
+
+<!-- ============================================================ -->
+<h2>8. Implementation Priority</h2>
+
+<table>
+  <tr><th>#</th><th>What</th><th>Effort</th><th>Impact</th><th>When</th></tr>
+  <tr>
+    <td>1</td>
+    <td><strong>Track tool calls in-memory during builds</strong> — increment a counter on every <code>use_figma</code>/<code>get_screenshot</code>/<code>get_metadata</code> call</td>
+    <td>Small — add counter to build context</td>
+    <td>Foundation for everything else</td>
+    <td>1.2.2</td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td><strong>Efficiency line in Phase 5 output</strong> (Proposal C) — show total calls and cache savings</td>
+    <td>Small — one line in VOICE_AND_TONE Phase 5 format</td>
+    <td>Immediate user visibility</td>
+    <td>1.2.2</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><strong>Economic gap recommendations</strong> (Proposal B) — add call-savings to DS gap recs</td>
+    <td>Small — text formatting change</td>
+    <td>Actionable recommendations → users add components → cheaper builds</td>
+    <td>1.2.2</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><strong>Report efficiency section</strong> (Proposal A) — add to <code>mimic_generate_build_report</code></td>
+    <td>Medium — new section in report generator</td>
+    <td>Shareable proof of value</td>
+    <td>1.3.0</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td><strong>README economics section</strong> (Proposal D)</td>
+    <td>Small — static documentation</td>
+    <td>Trust signal. Competitive differentiator.</td>
+    <td>1.3.0 (ship with report changes)</td>
+  </tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>9. Summary</h2>
+
+<div class="metric-row">
+  <div class="metric-box">
+    <div class="value">0</div>
+    <div class="label">Extra tool calls per build</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">~350</div>
+    <div class="label">Extra output tokens (negligible)</div>
+  </div>
+  <div class="metric-box">
+    <div class="value">4</div>
+    <div class="label">Surfaces where cost is shown</div>
+  </div>
+</div>
+
+<p><strong>The core reframe:</strong> Mimic's learning loop is an economic feature, not just a quality feature. Every cached pattern saves tool calls. Every DS component a user adds because of Mimic's recommendation saves tool calls on every future build. This compounds — and users should see it compound.</p>
+
+<p>Roles stay internal. What roles produce becomes more visible. The economic dimension — always present but never communicated — gets surfaced everywhere users already look: terminal output, build reports, gap recommendations, README.</p>
+
+<p>Total implementation cost: a counter variable, some text formatting, and a README section. No new tools, no new APIs, no new dependencies.</p>
+
+<hr>
+<p class="footer">Mimic AI &middot; Internal research &middot; 2026-04-23 &middot; gitignored</p>
+
+</body>
+</html>
