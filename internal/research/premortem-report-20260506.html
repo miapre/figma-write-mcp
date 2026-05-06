@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mimic AI v2 — Pre-Mortem Report</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0e1a; color: #e0e4ef; font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; line-height: 1.6; padding: 40px 24px; }
+  .container { max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+  .subtitle { color: #8b92a8; font-size: 14px; margin-bottom: 40px; }
+  .synthesis { background: #111627; border: 1px solid #1e2540; border-radius: 12px; padding: 32px; margin-bottom: 40px; }
+  .synthesis h2 { font-size: 20px; color: #fff; margin-bottom: 24px; border-bottom: 1px solid #1e2540; padding-bottom: 12px; }
+  .syn-item { margin-bottom: 24px; }
+  .syn-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 6px; }
+  .syn-label.likely { color: #f59e0b; }
+  .syn-label.dangerous { color: #ef4444; }
+  .syn-label.hidden { color: #a78bfa; }
+  .syn-label.revised { color: #34d399; }
+  .syn-label.checklist { color: #60a5fa; }
+  .syn-text { color: #c8cde0; font-size: 15px; }
+  .syn-text strong { color: #fff; }
+  .checklist-list { list-style: none; padding: 0; }
+  .checklist-list li { padding: 8px 0; border-bottom: 1px solid #1a1f35; font-size: 14px; color: #c8cde0; }
+  .checklist-list li:last-child { border-bottom: none; }
+  .checklist-list li::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 10px; vertical-align: middle; }
+  .checklist-list li:nth-child(1)::before { background: #ef4444; }
+  .checklist-list li:nth-child(2)::before { background: #f59e0b; }
+  .checklist-list li:nth-child(3)::before { background: #a78bfa; }
+  .checklist-list li:nth-child(4)::before { background: #34d399; }
+  .checklist-list li:nth-child(5)::before { background: #60a5fa; }
+  .agents-header { font-size: 14px; color: #8b92a8; margin-bottom: 16px; }
+  .agents-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 40px; }
+  .card { background: #111627; border: 1px solid #1e2540; border-radius: 10px; padding: 24px; border-left: 4px solid; }
+  .card:nth-child(1) { border-left-color: #ef4444; }
+  .card:nth-child(2) { border-left-color: #f59e0b; }
+  .card:nth-child(3) { border-left-color: #a78bfa; }
+  .card:nth-child(4) { border-left-color: #60a5fa; }
+  .card:nth-child(5) { border-left-color: #34d399; }
+  .card:nth-child(6) { border-left-color: #ec4899; }
+  .card:nth-child(7) { border-left-color: #f97316; }
+  .card-title { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+  .card-severity { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .sev-critical { color: #ef4444; }
+  .sev-high { color: #f59e0b; }
+  .sev-medium { color: #60a5fa; }
+  .card-section { margin-bottom: 14px; }
+  .card-section-label { font-size: 11px; font-weight: 700; color: #8b92a8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+  .card-section p { font-size: 13px; color: #b0b8d0; line-height: 1.55; }
+  .card-assumption { font-style: italic; color: #c8a0ff; font-size: 13px; }
+  .card-warning { font-size: 13px; color: #f5c77e; }
+  .revision { background: #0d1a12; border: 1px solid #1a3d2a; border-radius: 8px; padding: 14px 16px; margin-top: 10px; }
+  .revision p { font-size: 13px; color: #6ee7a0; }
+  .footer { text-align: center; color: #4a5170; font-size: 12px; margin-top: 40px; padding-top: 20px; border-top: 1px solid #1a1f35; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Mimic AI v2 — Pre-Mortem Report</h1>
+<p class="subtitle">7 failure scenarios analyzed in parallel / 2026-05-06 / Design spec stress test</p>
+
+<div class="synthesis">
+  <h2>Synthesis</h2>
+
+  <div class="syn-item">
+    <div class="syn-label likely">Most Likely Failure</div>
+    <p class="syn-text"><strong>LLM orchestration collapse on complex builds.</strong> 45 tools, a 7-step component configuration process, native chart math, and 6 sequential phases — guided by only 8 rules and contextual hints. Simple builds (a card, a form) will work. Dashboards with 10+ sections, multiple chart types, and 30+ components will break in unpredictable ways: skipped phases, half-configured components, wrong chart proportions. The tool will produce "something" that's always incomplete in ways users can't anticipate. This is the most likely failure because it happens on every complex build, not just edge cases.</p>
+  </div>
+
+  <div class="syn-item">
+    <div class="syn-label dangerous">Most Dangerous Failure</div>
+    <p class="syn-text"><strong>Plugin enforcement gate kills adoption on imperfect design systems.</strong> If the plugin rejects every text node without a text style and every fill without a color variable, and 80% of real-world DSs have gaps in their token coverage, then 80% of first-time users get a wall of errors and zero output. They don't come back. They tell others "it doesn't work." This is the most dangerous because it's invisible (users who bounce don't file issues), irreversible (first impressions are permanent), and attacks the core value prop (DS compliance becomes DS gatekeeping).</p>
+  </div>
+
+  <div class="syn-item">
+    <div class="syn-label hidden">The Hidden Assumption</div>
+    <p class="syn-text"><strong>The spec assumes the user's DS is structurally complete.</strong> Every enforcement decision, every error message, every compliance check assumes there's a DS text style for every text size and a color variable for every fill. But real design systems are works in progress. Some have 200 components and 3 color variables. Some have 500 variables and 0 text styles. Some have everything but use unconventional naming. The entire enforcement hierarchy was designed for the ideal DS, not the real one.</p>
+  </div>
+
+  <div class="syn-item">
+    <div class="syn-label revised">Revised Plan</div>
+    <p class="syn-text">Five specific changes to the spec:</p>
+    <div class="revision">
+      <p><strong>1. Add a chart calculation layer in the MCP server.</strong> Don't ask the LLM to compute radian angles, SVG bezier paths, or trig. The MCP server receives data + chart type and returns the exact coordinates, SVG strings, and arc angles. The LLM just passes them to the plugin. Math in Node.js, not in the prompt.</p>
+    </div>
+    <div class="revision">
+      <p><strong>2. Make enforcement graduated, not binary.</strong> Phase 2 inventories what the DS actually has. The plugin enforcement gate adapts: if the DS has text styles, require them. If it doesn't, accept raw text and flag it. Same for colors, spacing, radius. The enforcement level is set per-category based on what the DS provides, not a global strict/permissive switch.</p>
+    </div>
+    <div class="revision">
+      <p><strong>3. Add phase enforcement to the MCP layer.</strong> Don't rely on tool hints alone. The MCP server tracks the current phase. If Phase 1 hasn't completed, Phase 3 tools return an error: "DS Discovery not complete. Call mimic_discover_ds first." Mechanical enforcement of sequencing, not advisory hints.</p>
+    </div>
+    <div class="revision">
+      <p><strong>4. Add WebSocket keepalive + auto-reconnect.</strong> Ping every 15 seconds. If the connection drops, auto-reconnect with a 3-attempt backoff. The plugin maintains a pending-operation queue so in-flight calls resume after reconnect. Surface connection status in mimic_status.</p>
+    </div>
+    <div class="revision">
+      <p><strong>5. Make the first build succeed on any DS.</strong> Even if the DS has zero tokens, the first build should produce a complete artboard using whatever the DS provides (components at minimum) and raw values where tokens don't exist. The build report then says: "Built with 12 components and 0 DS tokens. Adding color variables would enable full DS compliance." The tool demonstrates value first, then recommends improvements. Never block the first build.</p>
+    </div>
+  </div>
+
+  <div class="syn-item">
+    <div class="syn-label checklist">Pre-Build Checklist</div>
+    <ul class="checklist-list">
+      <li><strong>Chart math validation:</strong> Before shipping, test every chart type (bar, donut, line, radar, scatter) with known data and verify pixel-level correctness. If the MCP calculation layer produces wrong output, it's a code bug you can fix — not an LLM hallucination you can't.</li>
+      <li><strong>Imperfect DS test suite:</strong> Test with 4 real-world DS configurations: (a) full tokens, (b) components only, (c) partial tokens (colors yes, spacing no), (d) community library with non-standard naming. All 4 must produce usable output on first build.</li>
+      <li><strong>Complex build stress test:</strong> Build a 12-section dashboard with 3 chart types and 20+ component instances. Verify all 6 phases complete, all components are configured, no placeholder text survives. Run this 3 times — if it fails once, the orchestration isn't reliable.</li>
+      <li><strong>WebSocket durability test:</strong> Run a build that takes 5+ minutes (200+ tool calls). Verify the connection doesn't drop. Simulate a drop mid-build and verify auto-reconnect works.</li>
+      <li><strong>First-run onboarding test:</strong> Have a non-technical designer (not the developer) attempt the full setup from zero. Time each step. If any step takes >2 minutes or requires Googling, it needs documentation or simplification.</li>
+    </ul>
+  </div>
+</div>
+
+<p class="agents-header">7 investigators analyzed failure scenarios independently</p>
+
+<div class="agents-grid">
+
+  <div class="card">
+    <div class="card-title">Plugin Enforcement Too Rigid</div>
+    <div class="card-severity sev-critical">Critical</div>
+    <div class="card-section">
+      <div class="card-section-label">Failure Story</div>
+      <p>First users aren't designers with manicured DSs. They have community libraries with 200 color variables but no semantic aliases, text styles that cover headings but not body copy. The plugin fires rejections on every body text node, every background fill. Zero output. A wall of errors with no path forward. Word spreads: "Mimic doesn't work." The enforcement gate — the core differentiator — becomes the core complaint.</p>
+    </div>
+    <div class="card-section">
+      <div class="card-section-label">Underlying Assumption</div>
+      <p class="card-assumption">The plugin's binary enforcement assumes target design systems are structurally complete enough to cover every token category encountered in real HTML.</p>
+    </div>
+    <div class="card-section">
+      <div class="card-section-label">Early Warning Signs</div>
+      <p class="card-warning">Beta users report zero-output builds on first attempt with 10+ errors. Support requests cluster around "my DS has X but not Y."</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Component Matching Unreliable</div>
+    <div class="card-severity sev-high">High</div>
+    <div class="card-section">
+      <div class="card-section-label">Failure Story</div>
+      <p>DS has the button named "CTA/Primary" nested under "Interactions/Actions." Search for "button" returns "Button Group" or nothing. Mimic picks the wrong match and proceeds. Worse: the cache compounds the error — every subsequent build confidently uses the wrong mapping. Users from agencies with inherited client DSs have significantly lower satisfaction than users building on their own DS.</p>
+    </div>
+    <div class="card-section">
+      <div class="card-section-label">Underlying Assumption</div>
+      <p class="card-assumption">Component names in real design systems are predictable enough that keyword search can reliably identify the canonical component.</p>
+    </div>
+    <div class="card-section">
+      <div class="card-section-label">Early Warning Signs</div>
+      <p class="card-warning">High cache confidence scores alongside high user correction rates on the same builds — the tool is certain and wrong simultaneously.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">LLM Orchestration Collapse</div>
+    <div class="card-severity sev-critical">Critical</div>
+    <div class="card-section">
+      <div class="card-section-label">Failure Story</div>
+      <p>User asks for a 12-section dashboard. LLM completes DS Discovery and jumps to Build, skipping Style Inventory. The 7-step component process falls apart: after inserting a component, the LLM runs step 1 (get props), maybe step 2 (set variant), then drifts to the next insertion without finishing configuration. Charts are built without labels. "It builds something, but it's always incomplete in unpredictable ways." Worse than a hard failure — unreliable in ways users can't anticipate.</p>
+    </div>
+    <div class="card-section">
+      <div class="card-section-label">Underlying Assumption</div>
+      <p class="card-assumption">Tool response hints can substitute for explicit state tracking, but hints are advisory — working memory pressure causes the LLM to act on recency rather than protocol.</p>
+    </div>
+    <div class="card-section">
+      <div class="card-section-label">Early Warning Signs</div>
+      <p class="card-warning">Phase skip rate >15% on builds with 6+ sections. Component configuration completeness drops below 70% on dashboards with 3+ chart types.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">WebSocket Bridge Silent Failure</div>
+    <div class="card-severity sev-high">High</div>
+    <div class="card-section">
+      <div class="card-section-label">Failure Story</div>
+      <p>Complex dashboard: 8-10 minutes of tool calls succeed, then the WebSocket drops silently at the 2-3 minute mark. The MCP server thinks it's connected. The plugin has no reconnect. The user sees cryptic timeouts. Because the bridge is embedded, there's no separate process to restart. Users must kill everything and start over. Partial builds leave orphaned frames. "Good for small screens, unreliable for real work."</p>
+    </div>
+    <div class="card-section">
+      <div class="card-section-label">Underlying Assumption</div>
+      <p class="card-assumption">A WebSocket initiated at build start will remain stable for any realistic build duration without keepalive or reconnect logic.</p>
+    </div>
+    <div class="card-section">
+      <div class="card-section-label">Early Warning Signs</div>
+      <p class="card-warning">Build success rate drops sharply for jobs >150 tool calls. Users report "restart the plugin" on complex builds but succeed on simple ones.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">First-Time Experience Too Complex</div>
+    <div class="card-severity sev-high">High</div>
+    <div class="card-section">
+      <div class="card-section-label">Failure Story</div>
+      <p>Setup requires: terminal, npx, JSON config editing, plugin install from manifest, library enable. Each step is a filter. Designers who hit a terminal error at step 1 have no recovery path. A stray comma in JSON causes silent failure. The 607 weekly downloads were self-selected developers. The audience shift to designers was never matched by a delivery shift. Reviews: "incredible once it works" and "I gave up." The second group is larger and quieter.</p>
+    </div>
+    <div class="card-section">
+      <div class="card-section-label">Underlying Assumption</div>
+      <p class="card-assumption">Designers who feel the pain of DS inconsistency are willing and able to complete a developer-grade setup process if the promise is compelling enough.</p>
+    </div>
+    <div class="card-section">
+      <div class="card-section-label">Early Warning Signs</div>
+      <p class="card-warning">Support requests cluster around JSON config step, not tool behavior. Install completion rate differs sharply by OS and technical background.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Learning Loop Never Reaches Critical Mass</div>
+    <div class="card-severity sev-medium">Medium</div>
+    <div class="card-section">
+      <div class="card-section-label">Failure Story</div>
+      <p>Designers run 2 builds in the first week, then return to normal workflow. Three weeks later the DS has changed, fingerprints don't match, recipes are stale. The experience isn't faster — it's a re-explanation of why the knowledge is stale. The auto-promote threshold of 3 builds sounds low until most users never hit 3 total. Gap recommendations are never actioned — users read the report and close it. The learning loop is infrastructure that never exercises.</p>
+    </div>
+    <div class="card-section">
+      <div class="card-section-label">Underlying Assumption</div>
+      <p class="card-assumption">Designers return to the same tool repeatedly within a timeframe short enough that accumulated knowledge remains valid.</p>
+    </div>
+    <div class="card-section">
+      <div class="card-section-label">Early Warning Signs</div>
+      <p class="card-warning">Median builds-per-user-per-month stays at 1-2. Gap recommendations are never actioned or forwarded to DS owners.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Native Chart Building Math Failures</div>
+    <div class="card-severity sev-critical">Critical</div>
+    <div class="card-section">
+      <div class="card-section-label">Failure Story</div>
+      <p>Bars where 42% renders taller than 78%. Donut segments summing to 340° or 390°. Radar polygons lopsided at the 4th vertex. SVG paths with coordinates off-canvas. Every broken chart costs ~25 tool calls — 25x the old convenience tool. Users retry, multiplying the burn. "100% DS compliant" becomes a bitter joke when charts are geometrically incoherent. The root cause can't be fixed because LLMs can't be made reliably better at floating-point geometry through prompting.</p>
+    </div>
+    <div class="card-section">
+      <div class="card-section-label">Underlying Assumption</div>
+      <p class="card-assumption">LLMs can reliably perform multi-step floating-point geometry (angle accumulation, trig, SVG path construction) at production quality.</p>
+    </div>
+    <div class="card-section">
+      <div class="card-section-label">Early Warning Signs</div>
+      <p class="card-warning">Donut segment angles need manual correction in >30% of runs. Token consumption per chart averages 3x estimates due to retries.</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Pre-mortem performed 2026-05-06 on Mimic AI v2 design spec (docs/superpowers/specs/2026-05-06-mimic-v2-design.md)
+</div>
+
+</div>
+</body>
+</html>
